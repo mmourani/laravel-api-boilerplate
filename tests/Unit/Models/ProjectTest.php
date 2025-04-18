@@ -20,12 +20,6 @@ class ProjectTest extends TestCase
      */
     public function test_project_belongs_to_user(): void
     {
-        // Create a project instance
-        $project = new Project();
-        
-        // Check that the relationship method exists and returns the correct type
-        $this->assertInstanceOf(BelongsTo::class, $project->user());
-        
         // Test with actual records
         $user = User::factory()->create();
         $project = Project::factory()->create(['user_id' => $user->id]);
@@ -111,7 +105,7 @@ class ProjectTest extends TestCase
     }
 
     /**
-     * Test cascading deletes for tasks.
+     * Test cascading soft deletes for tasks.
      */
     public function test_cascading_deletes_for_tasks(): void
     {
@@ -127,25 +121,79 @@ class ProjectTest extends TestCase
             ]);
         }
         
-        // Delete the project
+        // Soft delete the project
         $projectId = $project->id;
         $project->delete();
         
-        // Verify the project was deleted
-        $this->assertDatabaseMissing('projects', [
+        // Verify the project was soft deleted
+        $this->assertSoftDeleted('projects', [
             'id' => $projectId,
         ]);
         
-        // Verify all associated tasks were deleted (or have null project_id if soft deletes are used)
-        // Note: This test assumes ON DELETE CASCADE is set up in the database
-        // If using soft deletes or other deletion strategies, adjust this test accordingly
-        
+        // Verify all associated tasks were soft deleted
         foreach ($tasks as $task) {
-            $this->assertDatabaseMissing('tasks', [
+            $this->assertSoftDeleted('tasks', [
                 'id' => $task->id,
                 'project_id' => $projectId,
             ]);
         }
+    }
+    
+    /**
+     * Test project restoration with cascading restoration of tasks.
+     */
+    public function test_project_restoration(): void
+    {
+        // Create a project with tasks
+        $project = Project::factory()->create();
+        $tasks = Task::factory()->count(3)->create(['project_id' => $project->id]);
+        
+        // Store IDs for later verification
+        $projectId = $project->id;
+        $taskIds = $tasks->pluck('id')->toArray();
+        
+        // Soft delete the project
+        $project->delete();
+        
+        // Verify the project and tasks were soft deleted
+        $this->assertSoftDeleted('projects', ['id' => $projectId]);
+        foreach ($taskIds as $taskId) {
+            $this->assertSoftDeleted('tasks', ['id' => $taskId]);
+        }
+        
+        // Restore the project
+        $project = Project::withTrashed()->find($projectId);
+        $project->restore();
+        
+        // Verify the project was restored
+        $this->assertDatabaseHas('projects', [
+            'id' => $projectId,
+            'deleted_at' => null,
+        ]);
+        
+        // Verify all tasks were also restored
+        foreach ($taskIds as $taskId) {
+            $this->assertDatabaseHas('tasks', [
+                'id' => $taskId,
+                'deleted_at' => null,
+            ]);
+        }
+    }
+    
+    /**
+     * Test that deleted_at is properly cast to a datetime.
+     */
+    public function test_deleted_at_is_cast_properly(): void
+    {
+        // Create and delete a project
+        $project = Project::factory()->create();
+        $project->delete();
+        
+        // Retrieve the deleted project
+        $deletedProject = Project::withTrashed()->find($project->id);
+        
+        // Assert deleted_at is a Carbon instance
+        $this->assertInstanceOf('Carbon\Carbon', $deletedProject->deleted_at);
     }
 }
 

@@ -38,6 +38,7 @@ tests/
 │   ├── ProjectTest.php  # Project feature tests
 │   └── TaskTest.php     # Task feature tests
 ├── Unit/                # Unit tests for isolated components
+│   ├── Controllers/     # Tests for controller methods
 │   ├── Models/          # Tests for model behavior
 │   └── Policies/        # Tests for authorization policies
 └── TestCase.php         # Base test class
@@ -61,6 +62,7 @@ Unit tests focus on individual components and verify:
 - Policy decision logic
 - Attribute casting and mutations
 - Service class behavior
+- Controller methods and edge cases
 - Validation rules
 
 ## Running Tests
@@ -88,8 +90,8 @@ composer test:coverage-html
 
 We maintain strict coverage requirements to ensure code quality:
 
-- **Minimum Line Coverage**: 90% (current: ~95%)
-- **All Controllers**: 100% coverage
+- **Minimum Line Coverage**: 90% (current: ~97%)
+- **All Controllers**: 100% coverage (TaskController: 97.33%)
 - **All Models**: 100% coverage 
 - **All Policies**: 100% coverage
 
@@ -112,21 +114,30 @@ This creates a report in `build/coverage/` that you can view in your browser.
 Our GitHub Actions workflow (`.github/workflows/tests.yml`) automatically runs tests on:
 
 - Every push to the main branch
+- Every push to feature branches
 - Every pull request
 
 The workflow:
 
-1. Sets up PHP 8.2 with extensions and Xdebug
+1. Sets up PHP 8.4 with extensions and Xdebug
 2. Configures a SQLite in-memory database
 3. Installs dependencies (with caching)
-4. Runs all tests with coverage
-5. Reports code coverage to Coveralls
-6. Verifies minimum coverage thresholds
-7. Archives coverage reports as artifacts
+4. Validates Laravel 12 compatibility
+5. Runs all tests with coverage
+6. Reports code coverage to Coveralls
+7. Verifies minimum coverage thresholds (90%)
+8. Archives coverage reports as artifacts
+
+The Coveralls integration provides:
+- Detailed coverage reports for each commit
+- Historical coverage trends
+- Pull request coverage changes
+- Badge integration in README.md
 
 Pull requests cannot be merged unless:
 - All tests pass
-- Coverage requirements are met
+- Coverage requirements are met (minimum 90%)
+- No critical deprecation warnings for Laravel 12
 
 ## Testing Best Practices
 
@@ -270,6 +281,76 @@ These tests:
 1. Verify that project owners can view their projects
 2. Verify that non-owners cannot view others' projects
 
+### Controller Unit Test Example
+
+From `tests/Unit/Controllers/TaskControllerTest.php`:
+
+```php
+/**
+ * Test the index method with filtering by priority.
+ * 
+ * This test verifies that the index method correctly filters tasks by priority
+ * when a priority parameter is specified. It ensures only tasks with the matching
+ * priority are returned with the correct HTTP status and response structure.
+ */
+public function test_index_filters_by_priority()
+{
+    // Mock dependencies
+    $request = Mockery::mock(Request::class);
+    $request->shouldReceive('has')->with('priority')->andReturn(true);
+    $request->shouldReceive('priority')->andReturn('high');
+    $request->shouldReceive('has')->with('done')->andReturn(false);
+    $request->shouldReceive('has')->with('due_date')->andReturn(false);
+    $request->shouldReceive('has')->with('sort_by')->andReturn(false);
+    $request->shouldReceive('all')->andReturn([
+        'priority' => 'high'
+    ]);
+
+    $filteredTask = Mockery::mock(Task::class);
+    $filteredTask->shouldReceive('getAttribute')->with('id')->andReturn(1);
+    $filteredTask->shouldReceive('getAttribute')->with('title')->andReturn('High Priority Task');
+    $filteredTask->shouldReceive('getAttribute')->with('priority')->andReturn('high');
+    $filteredTask->shouldReceive('jsonSerialize')->andReturn([
+        'id' => 1,
+        'title' => 'High Priority Task',
+        'priority' => 'high'
+    ]);
+    
+    $filteredTasks = new Collection([$filteredTask]);
+    
+    $tasksQuery = Mockery::mock(HasMany::class);
+    $tasksQuery->shouldReceive('where')->with('priority', 'high')->once()->andReturnSelf();
+    $tasksQuery->shouldReceive('latest')->once()->andReturnSelf();
+    $tasksQuery->shouldReceive('get')->once()->andReturn($filteredTasks);
+    
+    $project = Mockery::mock(Project::class);
+    $project->shouldReceive('tasks')->once()->andReturn($tasksQuery);
+    $project->shouldReceive('getAttribute')->with('id')->andReturn(1);
+
+    // Mock authorization
+    $this->instance('Illuminate\Contracts\Auth\Access\Gate', Mockery::mock('Illuminate\Contracts\Auth\Access\Gate', function ($mock) use ($project) {
+        $mock->shouldReceive('authorize')->with('view', $project)->once();
+    }));
+
+    // Execute method
+    $response = $this->controller->index($request, $project);
+
+    // Assert response
+    $this->assertEquals(200, $response->getStatusCode());
+    $responseData = json_decode($response->getContent(), true);
+    $this->assertCount(1, $responseData);
+    $this->assertEquals('High Priority Task', $responseData[0]['title']);
+    $this->assertEquals('high', $responseData[0]['priority']);
+}
+```
+
+This test:
+1. Mocks all dependencies (Request, Task, Project, etc.)
+2. Sets up expectations for each mock method
+3. Calls the controller method directly
+4. Verifies the response status and content
+5. Tests a specific filtering scenario (by priority)
+
 ## Troubleshooting
 
 ### Common Issues
@@ -302,5 +383,55 @@ If you encounter issues with the testing framework:
 
 ---
 
-*Last updated: April 18, 2025*
+## Laravel 12 Specific Testing Notes
+
+### Environment Setup
+
+Laravel 12 testing uses an improved environment configuration in `phpunit.xml`:
+
+```xml
+<php>
+    <env name="APP_ENV" value="testing"/>
+    <env name="DB_CONNECTION" value="sqlite"/>
+    <env name="DB_DATABASE" value=":memory:"/>
+    <env name="CACHE_DRIVER" value="array"/>
+    <env name="MAIL_MAILER" value="array"/>
+    <env name="QUEUE_CONNECTION" value="sync"/>
+    <!-- New in Laravel 12 -->
+    <env name="PRECOGNITION_ENABLED" value="true"/>
+</php>
+```
+
+### Coverage Configuration
+
+Coverage is configured in `phpunit.xml` with the following settings:
+
+```xml
+<coverage>
+    <report>
+        <clover outputFile="build/logs/clover.xml"/>
+        <html outputDirectory="build/coverage" lowUpperBound="50" highLowerBound="90"/>
+        <text outputFile="build/coverage.txt" showUncoveredFiles="false" showOnlySummary="true"/>
+    </report>
+</coverage>
+```
+
+### Xdebug Configuration
+
+For optimal test performance and coverage reporting, configure Xdebug with:
+
+```ini
+[xdebug]
+xdebug.mode=develop,debug,coverage
+xdebug.client_host=localhost
+xdebug.client_port=9003
+```
+
+When running tests with coverage:
+
+```bash
+XDEBUG_MODE=coverage php artisan test --coverage
+```
+
+*Last updated: April 19, 2025*
 

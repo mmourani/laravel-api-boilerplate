@@ -160,6 +160,10 @@ class TaskTest extends TestCase
     /**
      * DELETE TESTS
      */
+     
+    /**
+     * Test that a user can soft-delete a task from their project.
+     */
     public function test_user_can_delete_task_from_their_project(): void
     {
         $user = User::factory()->create();
@@ -169,13 +173,17 @@ class TaskTest extends TestCase
         $task = Task::factory()->create([
             'project_id' => $project->id,
         ]);
-
+        
+        $taskId = $task->id;
+        
         $response = $this->actingAs($user)
             ->deleteJson("/api/projects/{$project->id}/tasks/{$task->id}");
-
+            
         $response->assertStatus(200);
-        $this->assertDatabaseMissing('tasks', [
-            'id' => $task->id,
+        
+        // Verify the task was soft deleted
+        $this->assertSoftDeleted('tasks', [
+            'id' => $taskId,
         ]);
     }
 
@@ -197,6 +205,44 @@ class TaskTest extends TestCase
         $this->assertDatabaseHas('tasks', [
             'id' => $task->id,
         ]);
+    }
+    
+    /**
+     * Test that soft-deleted tasks are not visible in task listings.
+     */
+    public function test_soft_deleted_tasks_are_not_visible_in_list(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create([
+            'user_id' => $user->id,
+        ]);
+        
+        // Create and soft delete a task
+        $softDeletedTask = Task::factory()->create([
+            'project_id' => $project->id,
+            'title' => 'Soft Deleted Task'
+        ]);
+        $softDeletedTask->delete();
+        
+        // Create an active task
+        $activeTask = Task::factory()->create([
+            'project_id' => $project->id,
+            'title' => 'Active Task'
+        ]);
+        
+        // Get the project's tasks
+        $response = $this->actingAs($user)
+            ->getJson("/api/projects/{$project->id}/tasks");
+        
+        $response->assertStatus(200)
+            ->assertJsonCount(1)
+            ->assertJsonFragment([
+                'id' => $activeTask->id,
+                'title' => 'Active Task'
+            ])
+            ->assertJsonMissing([
+                'title' => 'Soft Deleted Task'
+            ]);
     }
 
     /**
@@ -381,6 +427,224 @@ class TaskTest extends TestCase
         $this->assertEquals('Urgent task', $responseData[0]['title']);
         $this->assertEquals('Mid-term task', $responseData[1]['title']);
         $this->assertEquals('Long-term task', $responseData[2]['title']);
+    }
+
+    /**
+     * TEST ERROR HANDLING PATHS
+     */
+    public function test_task_not_found_in_project(): void
+    {
+        $user = User::factory()->create();
+        $project1 = Project::factory()->create(['user_id' => $user->id]);
+        $project2 = Project::factory()->create(['user_id' => $user->id]);
+        $task = Task::factory()->create(['project_id' => $project2->id]);
+
+        // Try to access a task that exists but is not in this project
+        $response = $this->actingAs($user)
+            ->getJson("/api/projects/{$project1->id}/tasks/{$task->id}");
+
+        $response->assertStatus(404)
+            ->assertJson(['message' => 'Task not found in this project']);
+    }
+
+    public function test_task_validation_invalid_priority(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)
+            ->postJson("/api/projects/{$project->id}/tasks", [
+                'title' => 'Invalid Priority Task',
+                'priority' => 'invalid-priority', // Not in allowed list
+                'due_date' => '2025-05-01',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['priority']);
+    }
+
+    public function test_task_validation_missing_title(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)
+            ->postJson("/api/projects/{$project->id}/tasks", [
+                'priority' => 'high',
+                'due_date' => '2025-05-01',
+                // Missing title
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['title']);
+    }
+
+    public function test_task_validation_invalid_date_format(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)
+            ->postJson("/api/projects/{$project->id}/tasks", [
+                'title' => 'Date Format Task',
+                'priority' => 'high',
+                'due_date' => 'not-a-date', // Invalid date format
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['due_date']);
+    }
+
+    public function test_task_update_not_found_in_project(): void
+    {
+        $user = User::factory()->create();
+        $project1 = Project::factory()->create(['user_id' => $user->id]);
+        $project2 = Project::factory()->create(['user_id' => $user->id]);
+        $task = Task::factory()->create(['project_id' => $project2->id]);
+
+        $response = $this->actingAs($user)
+            ->putJson("/api/projects/{$project1->id}/tasks/{$task->id}", [
+                'title' => 'Updated Task',
+                'priority' => 'high',
+            ]);
+
+        $response->assertStatus(404)
+            ->assertJson(['message' => 'Task not found in this project']);
+    }
+
+    public function test_task_delete_not_found_in_project(): void
+    {
+        $user = User::factory()->create();
+        $project1 = Project::factory()->create(['user_id' => $user->id]);
+        $project2 = Project::factory()->create(['user_id' => $user->id]);
+        $task = Task::factory()->create(['project_id' => $project2->id]);
+
+        $response = $this->actingAs($user)
+            ->deleteJson("/api/projects/{$project1->id}/tasks/{$task->id}");
+
+        $response->assertStatus(404)
+            ->assertJson(['message' => 'Task not found in this project']);
+    }
+
+    /**
+     * ADDITIONAL SORTING/FILTERING TESTS
+     */
+    public function test_tasks_can_be_sorted_by_invalid_field(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create(['user_id' => $user->id]);
+        
+        // Create 3 tasks
+        $task1 = Task::factory()->create([
+            'project_id' => $project->id,
+            'title' => 'Task One'
+        ]);
+        
+        $task2 = Task::factory()->create([
+            'project_id' => $project->id,
+            'title' => 'Task Two'
+        ]);
+        
+        $task3 = Task::factory()->create([
+            'project_id' => $project->id,
+            'title' => 'Task Three'
+        ]);
+
+        // Even with invalid sort field, request should succeed
+        $response = $this->actingAs($user)
+            ->getJson("/api/projects/{$project->id}/tasks?sort_by=invalid_field&direction=asc");
+
+        // Verify the response status and task count
+        $response->assertStatus(200)
+            ->assertJsonCount(3);
+        
+        $responseData = $response->json();
+        
+        // Verify all tasks are present by checking their titles exist in the response
+        $titles = array_column($responseData, 'title');
+        $this->assertContains('Task One', $titles);
+        $this->assertContains('Task Two', $titles);
+        $this->assertContains('Task Three', $titles);
+        
+        // Verify each task has the expected structure
+        foreach ($responseData as $task) {
+            $this->assertArrayHasKey('id', $task);
+            $this->assertArrayHasKey('title', $task);
+            $this->assertArrayHasKey('project_id', $task);
+            $this->assertArrayHasKey('done', $task);
+            $this->assertArrayHasKey('priority', $task);
+            
+            // Verify task belongs to the correct project
+            $this->assertEquals($project->id, $task['project_id']);
+        }
+        
+        // Verify that we can consistently get the same results with the same query
+        $repeatResponse = $this->actingAs($user)
+            ->getJson("/api/projects/{$project->id}/tasks?sort_by=invalid_field&direction=asc");
+        
+        $this->assertEquals(
+            $response->json(), 
+            $repeatResponse->json(),
+            "Sorting should be consistent across multiple identical requests"
+        );
+    }
+
+    public function test_tasks_with_invalid_sorting_direction(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create(['user_id' => $user->id]);
+        
+        Task::factory()->count(3)->create(['project_id' => $project->id]);
+
+        // Even with invalid direction, request should succeed with default direction
+        $response = $this->actingAs($user)
+            ->getJson("/api/projects/{$project->id}/tasks?sort_by=id&direction=invalid");
+
+        $response->assertStatus(200)
+            ->assertJsonCount(3);
+        
+        // Default direction is asc, so first ID should be 1
+        $responseData = $response->json();
+        $this->assertEquals(1, $responseData[0]['id']);
+    }
+
+    public function test_combined_filters_and_sorting(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create(['user_id' => $user->id]);
+        
+        // Create tasks with different combinations of priority and done status
+        Task::factory()->create([
+            'project_id' => $project->id,
+            'priority' => 'high',
+            'done' => true,
+            'title' => 'Completed high priority task',
+            'due_date' => now()->addDays(5)
+        ]);
+        
+        Task::factory()->create([
+            'project_id' => $project->id,
+            'priority' => 'high',
+            'done' => false,
+            'title' => 'Pending high priority task',
+            'due_date' => now()->addDays(2)
+        ]);
+        
+        Task::factory()->create([
+            'project_id' => $project->id,
+            'priority' => 'medium',
+            'done' => true,
+            'title' => 'Completed medium priority task',
+            'due_date' => now()->addDays(10)
+        ]);
+
+        // Test combined filtering: only high priority and pending tasks
+        $response = $this->actingAs($user)
+            ->getJson("/api/projects/{$project->id}/tasks?priority=high&done=false&sort_by=due_date&direction=asc");
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1)
+            ->assertJsonFragment(['title' => 'Pending high priority task']);
     }
 }
 

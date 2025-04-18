@@ -15,6 +15,8 @@ jobs:
     name: Laravel 12 Tests (PHP 8.2+)
     runs-on: ubuntu-latest
     
+    # Laravel 12 requires PHP 8.2 or higher
+    
     # Using SQLite for faster tests instead of MySQL
     # This matches our phpunit.xml configuration for in-memory database
 
@@ -27,7 +29,7 @@ jobs:
       - name: 🔧 Setup PHP with Xdebug
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.4'
           extensions: mbstring, pdo, sqlite3, pdo_sqlite, gd, zip, bcmath, exif, pcntl, xdebug, intl, fileinfo
           coverage: xdebug
           tools: composer:v2, phpstan
@@ -102,13 +104,14 @@ jobs:
           export XDEBUG_MODE=coverage
           php -v
           php -m | grep xdebug
+          php -i | grep xdebug.mode || echo "xdebug.mode not set in PHP configuration"
           
           # Check for Laravel 12 deprecations during tests
           echo "Running PHP Stan analysis for deprecations..."
           vendor/bin/phpstan analyse app --level=0 --no-progress || true
           
           echo "Running tests with code coverage..."
-          php artisan test --env=testing --coverage-clover build/logs/clover.xml --coverage-text --testdox
+          XDEBUG_MODE=coverage php artisan test --env=testing --coverage-clover build/logs/clover.xml --coverage-text --testdox
           # Verify coverage file was created
           echo "Checking coverage file..."
           ls -la build/logs/
@@ -123,7 +126,7 @@ jobs:
         if: success()
         run: |
           echo "Analyzing code coverage..."
-          COVERAGE=$(php -r 'libxml_use_internal_errors(true); $xml = simplexml_load_file("build/logs/clover.xml"); echo round((float) $xml->project->metrics["coveredelements"] / $xml->project->metrics["elements"] * 100, 2);')
+          COVERAGE=$(php -r 'libxml_use_internal_errors(true); $xml = simplexml_load_file("build/logs/clover.xml"); if($xml) { echo round((float) $xml->project->metrics["coveredelements"] / $xml->project->metrics["elements"] * 100, 2); } else { echo "Error parsing XML"; }')
           echo "Code coverage: ${COVERAGE}%"
           if (( $(echo "$COVERAGE < 90" | bc -l) )); then
             echo "::warning::Code coverage (${COVERAGE}%) is below the 90% threshold"
@@ -135,12 +138,16 @@ jobs:
         if: success()
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          COVERALLS_PARALLEL: true
+          COVERALLS_FLAG_NAME: laravel-12-tests
           CI_NAME: github-actions
           CI_JOB_ID: ${{ github.run_id }}
           CI_BUILD_NUMBER: ${{ github.run_number }}
           CI_BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CI_BRANCH: ${{ github.ref_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: ${{ github.ref_name }}
           XDEBUG_MODE: coverage
         run: |
           echo "==================== COVERALLS DEBUG INFO ===================="
@@ -166,17 +173,31 @@ jobs:
             
             # Create explicit .coveralls.yml for the upload
             echo "service_name: github-actions" > .coveralls.yml
-            echo "repo_token: $COVERALLS_REPO_TOKEN" >> .coveralls.yml
-            echo "coverage_clover: build/logs/clover.xml" >> .coveralls.yml
+            echo "Running PHP Coveralls with maximum verbosity"
+            cat > .coveralls.yml << EOF
+service_name: github-actions
+repo_token: ${COVERALLS_REPO_TOKEN}
+coverage_clover: build/logs/clover.xml
+json_path: build/logs/coveralls-upload.json
+git:
+  branch: ${GIT_BRANCH}
+  commit_sha: ${GIT_COMMIT_SHA}
+EOF
+            XDEBUG_MODE=coverage vendor/bin/php-coveralls -v --env=prod
             echo "json_path: build/logs/coveralls-upload.json" >> .coveralls.yml
             
             echo "Running PHP Coveralls with maximum verbosity"
-            vendor/bin/php-coveralls -v --env=prod
+            XDEBUG_MODE=coverage vendor/bin/php-coveralls -v --env=prod
             
             echo "Checking generated JSON file for upload:"
             if [ -f build/logs/coveralls-upload.json ]; then
               echo "JSON file exists with size: $(du -h build/logs/coveralls-upload.json | cut -f1)"
-              jq -C '.git .service_name .repo_token' build/logs/coveralls-upload.json || echo "JQ not available to parse JSON"
+              # Make a curl request directly to Coveralls API as a fallback
+              echo "Making direct API request to Coveralls as a fallback..."
+              # Add required repository info to JSON before sending
+              jq '.git.branch = env.GIT_BRANCH | .git.head.id = env.GIT_COMMIT_SHA | .repo_token = env.COVERALLS_REPO_TOKEN' build/logs/coveralls-upload.json > build/logs/coveralls-modified.json || cp build/logs/coveralls-upload.json build/logs/coveralls-modified.json
+              curl -v -F "json_file=@build/logs/coveralls-modified.json" https://coveralls.io/api/v1/jobs || echo "Direct API upload failed"
+              curl -F "json_file=@build/logs/coveralls-upload.json" https://coveralls.io/api/v1/jobs || echo "Direct API upload failed"
             else
               echo "Error: JSON file for Coveralls upload was not generated"
               exit 1

@@ -12,9 +12,8 @@ use App\Http\Controllers\TaskController;
 | API Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
+| This file defines all API endpoints available to your application.
+| Public and authenticated routes are clearly separated for security.
 |
 */
 
@@ -26,18 +25,41 @@ Route::get('/health', function (): JsonResponse {
     ]);
 });
 
-// Public Routes
+// -----------------------------------------------------------------------------
+// Public Routes (No authentication required)
+// -----------------------------------------------------------------------------
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Protected Routes
+// -----------------------------------------------------------------------------
+// Protected Routes (Require auth:sanctum)
+// -----------------------------------------------------------------------------
 Route::middleware('auth:sanctum')->group(function () {
+
+    // -------------------------------------------------------------------------
+    // Authenticated user session info
+    // -------------------------------------------------------------------------
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // 👇 Project Routes (CRUD)
+    // -------------------------------------------------------------------------
+    // Project Restore Routes
+    // -------------------------------------------------------------------------
+    // Note: These must be defined BEFORE the apiResource route
+    // to avoid conflicts with implicit route model binding
+    // -------------------------------------------------------------------------
+    Route::post('projects/{id}/restore', [ProjectController::class, 'restore'])
+        ->name('projects.restore');
+
+    // Optional alternative verbs for REST-style clients
+    Route::patch('projects/{id}/restore', [ProjectController::class, 'restore']);
+    Route::put('projects/{id}/restore', [ProjectController::class, 'restore']);
+
+    // -------------------------------------------------------------------------
+    // Project & Task Resource Routes
+    // -------------------------------------------------------------------------
     Route::apiResource('projects', ProjectController::class);
 
-    // Nested Task routes
+    // Nested resource: tasks within a project
     Route::apiResource('projects.tasks', TaskController::class);
 });
