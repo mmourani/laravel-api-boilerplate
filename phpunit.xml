@@ -33,8 +33,10 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
     </php>
 
-    <logging>
-        <log type="coverage-clover" target="build/logs/clover.xml"/>
-    </logging>
+<coverage>
+    <report>
+        <clover outputFile="build/logs/clover.xml"/>
+    </report>
+</coverage>
 
 </phpunit>
