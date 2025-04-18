@@ -10,6 +10,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 class TaskController extends Controller
 {
     use AuthorizesRequests;
+
     /**
      * List all tasks for a given project.
      */
@@ -17,31 +18,51 @@ class TaskController extends Controller
     {
         $this->authorize('view', $project);
 
-        $query = $project->tasks(); // ← remove `->query()`
+        $query = $project->tasks();
 
-        // Filters
+        // Filter by priority
         if ($request->has('priority')) {
             $query->where('priority', $request->priority);
         }
 
+        // Filter by completion status
         if ($request->has('done')) {
             $query->where('done', filter_var($request->done, FILTER_VALIDATE_BOOLEAN));
         }
 
+        // Filter by due date
         if ($request->has('due_date')) {
             $query->whereDate('due_date', $request->due_date);
         }
 
         // Sorting
         if ($request->has('sort_by')) {
-            $direction = $request->get('direction', 'asc');
-            $query->orderBy($request->sort_by, $direction);
+            $direction = $request->input('direction', 'asc');
+            
+            // Ensure valid sort direction
+            $direction = in_array(strtolower($direction), ['asc', 'desc']) ? $direction : 'asc';
+            
+            // Sort by priority needs special handling for custom order
+            if ($request->sort_by === 'priority') {
+                $sql = "CASE 
+                    WHEN priority = 'high' THEN 3 
+                    WHEN priority = 'medium' THEN 2 
+                    WHEN priority = 'low' THEN 1 
+                    ELSE 0 END";
+                
+                // For descending, high (3) should come first
+                // For ascending, low (1) should come first
+                $query->orderByRaw($sql . " " . ($direction === 'desc' ? 'DESC' : 'ASC'));
+            } else {
+                $query->orderBy($request->sort_by, $direction);
+            }
         } else {
             $query->latest(); // default: newest first
         }
 
-        return $query->get();
+        return response()->json($query->get());
     }
+
     /**
      * Store a new task in a project.
      */
@@ -51,12 +72,16 @@ class TaskController extends Controller
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'done' => 'boolean',
-            'priority' => 'nullable|in:low,medium,high',
+            'priority' => 'required|in:low,medium,high',
             'due_date' => 'nullable|date',
         ]);
 
-        $task = $project->tasks()->create($validated);
+        $task = $project->tasks()->create([
+            'title' => $validated['title'],
+            'priority' => $validated['priority'],
+            'due_date' => $validated['due_date'] ?? null,
+            'done' => false, // Default value
+        ]);
 
         return response()->json($task, 201);
     }
@@ -67,6 +92,10 @@ class TaskController extends Controller
     public function show(Project $project, Task $task)
     {
         $this->authorize('view', $project);
+        
+        if ($task->project_id !== $project->id) {
+            abort(404);
+        }
 
         return response()->json($task);
     }
@@ -77,15 +106,19 @@ class TaskController extends Controller
     public function update(Request $request, Project $project, Task $task)
     {
         $this->authorize('update', $project);
+        
+        if ($task->project_id !== $project->id) {
+            abort(404);
+        }
 
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'done' => 'boolean',
-            'priority' => 'nullable|in:low,medium,high',
+            'priority' => 'sometimes|required|in:low,medium,high',
             'due_date' => 'nullable|date',
         ]);
 
-        $task->update($request->only(['title', 'done', 'priority', 'due_date']));
+        $task->update($validated);
 
         return response()->json($task);
     }
@@ -95,7 +128,11 @@ class TaskController extends Controller
      */
     public function destroy(Project $project, Task $task)
     {
-        $this->authorize('delete', $project);
+        $this->authorize('update', $project);
+        
+        if ($task->project_id !== $project->id) {
+            abort(404);
+        }
 
         $task->delete();
 
