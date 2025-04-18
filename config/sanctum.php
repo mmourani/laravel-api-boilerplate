@@ -46,7 +46,7 @@ return [
     |
     */
 
-    'expiration' => null,
+    'expiration' => env('SANCTUM_TOKEN_EXPIRATION', 60 * 24), // 24 hours by default
 
     /*
     |--------------------------------------------------------------------------
@@ -61,7 +61,7 @@ return [
     |
     */
 
-    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
+    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', 'laravel_sanctum_'),
 
     /*
     |--------------------------------------------------------------------------
@@ -78,6 +78,44 @@ return [
         'authenticate_session' => Laravel\Sanctum\Http\Middleware\AuthenticateSession::class,
         'encrypt_cookies' => Illuminate\Cookie\Middleware\EncryptCookies::class,
         'validate_csrf_token' => Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rate Limiting
+    |--------------------------------------------------------------------------
+    |
+    | This configuration determines the rate limiting settings for token
+    | generation. By default, users may make 6 token requests per minute.
+    | Adjust these values based on your application's security needs.
+    |
+    */
+    
+    'rate_limits' => [
+        'token' => [
+            'limit' => env('SANCTUM_RATE_LIMIT', 6),
+            'interval' => env('SANCTUM_RATE_LIMIT_INTERVAL', 60),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | CORS Configuration
+    |--------------------------------------------------------------------------
+    |
+    | The CORS configuration for Sanctum. These settings control which
+    | domains can access your API. Additional security can be implemented
+    | by restricting the allowed origins.
+    |
+    */
+    
+    'cors' => [
+        'allowed_origins' => explode(',', env('SANCTUM_ALLOWED_ORIGINS', '*')),
+        'allowed_methods' => ['*'],
+        'allowed_headers' => ['*'],
+        'exposed_headers' => [],
+        'max_age' => 0,
+        'supports_credentials' => true,
     ],
 
 ];
