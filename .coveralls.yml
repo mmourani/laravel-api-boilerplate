@@ -1,2 +1,4 @@
 coverage_clover: build/logs/clover.xml
 json_path: build/logs/coveralls-upload.json
+service_name: github-actions
+repo_token: $COVERALLS_REPO_TOKEN

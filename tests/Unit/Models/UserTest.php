@@ -59,7 +59,7 @@ class UserTest extends TestCase
         ]);
         
         // Password should be hashed and not equal to the plain text password
-        $this->assertNotEquals($plainPassword, $user->password);
+        $this->assertNotSame($plainPassword, $user->password);
         // Should be a bcrypt hash (starts with $2y$)
         $this->assertStringStartsWith('$2y$', $user->password);
     }
@@ -119,7 +119,7 @@ class UserTest extends TestCase
         $this->assertEquals('John Doe', $normalUser->name);
         $this->assertEquals('john@example.com', $normalUser->email);
         // Password is hashed automatically, so just verify it's not the original value
-        $this->assertNotEquals('password', $normalUser->password);
+        $this->assertNotSame('password', $normalUser->password);
     }
 }
 

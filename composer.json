@@ -5,15 +5,30 @@
     "description": "The skeleton application for the Laravel framework.",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "ext-ctype": "*",
+        "ext-curl": "*",
+        "ext-fileinfo": "*",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "ext-pdo": "*",
+        "ext-tokenizer": "*",
+        "guzzlehttp/guzzle": "^7.7",
+        "laravel/framework": "^10.0",
+        "laravel/sanctum": "^3.3",
+        "laravel/tinker": "^2.8"
+    },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "laravel/pail": "^1.2.2",
+        "laravel/pail": "^1.2",
         "laravel/pint": "^1.13",
-        "laravel/sail": "^1.41",
+        "laravel/sail": "^1.25",
         "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^8.6",
+        "nunomaduro/collision": "^7.0",
         "php-coveralls/php-coveralls": "^2.7",
-        "phpunit/phpunit": "^11.5"
+        "phpunit/phpunit": "^10.4",
+        "spatie/laravel-ignition": "^2.0"
     },
     "autoload": {
         "psr-4": {
@@ -79,9 +94,5 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true,
-    "require": {
-        "laravel/sanctum": "^4.0",
-        "laravel/tinker": "^2.10"
-    }
+    "prefer-stable": true
 }
