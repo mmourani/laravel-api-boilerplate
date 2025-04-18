@@ -55,6 +55,9 @@ jobs:
         run: |
           mkdir -p build/logs
           mkdir -p build/coverage
+          chmod -R 777 build
+          echo "Test directories created:"
+          ls -la build/
 
       - name: 🧼 Clear application cache
         run: |
@@ -88,7 +91,21 @@ jobs:
       - name: 🧪 Run tests with coverage
         run: |
           echo "Running tests with coverage..."
-          XDEBUG_MODE=coverage php artisan test --env=testing --coverage-clover build/logs/clover.xml --testdox
+          # Set Xdebug mode explicitly and ensure code coverage is collected
+          export XDEBUG_MODE=coverage
+          php -v
+          php -m | grep xdebug
+          php artisan test --env=testing --coverage-clover build/logs/clover.xml --coverage-text --testdox
+          
+          # Verify coverage file was created
+          echo "Checking coverage file..."
+          ls -la build/logs/
+          if [ -f "build/logs/clover.xml" ]; then
+            echo "✅ Coverage file exists"
+            head -n 20 build/logs/clover.xml
+          else
+            echo "❌ Coverage file missing!"
+          fi
           
       - name: 📊 Generate HTML coverage report
         if: success()
@@ -112,10 +129,32 @@ jobs:
         if: success()
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          COVERALLS_PARALLEL: true
+          COVERALLS_FLAG_NAME: php-8.2-test
         run: |
           echo "Uploading coverage results to Coveralls..."
+          echo "Working directory: $(pwd)"
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Coverage file location:"
+          ls -la build/logs/
+          
           if [ -f build/logs/clover.xml ]; then
-            vendor/bin/php-coveralls -v
+            echo "Coverage XML content preview:"
+            head -n 20 build/logs/clover.xml
+            
+            # Calculate coverage percentage for verification
+            COVERAGE=$(php -r 'libxml_use_internal_errors(true); $xml = simplexml_load_file("build/logs/clover.xml"); echo round((float) $xml->project->metrics["coveredelements"] / $xml->project->metrics["elements"] * 100, 2);')
+            echo "Calculated coverage: ${COVERAGE}%"
+            
+            # Create debug .coveralls.yml for inspection
+            echo "service_name: github-actions" > .coveralls.yml.debug
+            echo "repo_token: [SECRET]" >> .coveralls.yml.debug
+            echo "coverage_clover: build/logs/clover.xml" >> .coveralls.yml.debug
+            echo "json_path: build/logs/coveralls-upload.json" >> .coveralls.yml.debug
+            cat .coveralls.yml.debug
+            
+            # Run Coveralls with maximum verbosity
+            vendor/bin/php-coveralls -v --env=prod
           else
             echo "Error: Coverage file not found"
             exit 1
