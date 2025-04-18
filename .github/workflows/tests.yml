@@ -162,10 +162,12 @@ jobs:
         
       - name: 📦 Archive code coverage results
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: code-coverage-report
           path: build/coverage
+          retention-days: 7
+          if-no-files-found: warn
         
       - name: 🚨 Capture and report test failures
         if: failure()
