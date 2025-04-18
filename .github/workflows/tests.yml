@@ -5,7 +5,6 @@ on:
     branches: 
       - main
       - feature/*
-      - feature/forge-setup
   pull_request:
     branches: 
       - main
@@ -13,7 +12,7 @@ on:
 
 jobs:
   laravel-tests:
-    name: Laravel Tests (PHP 8.2)
+    name: Laravel 12 Tests (PHP 8.2+)
     runs-on: ubuntu-latest
     
     # Using SQLite for faster tests instead of MySQL
@@ -21,7 +20,7 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -29,9 +28,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo, sqlite3, pdo_sqlite, gd, zip, bcmath, exif, pcntl, xdebug
+          extensions: mbstring, pdo, sqlite3, pdo_sqlite, gd, zip, bcmath, exif, pcntl, xdebug, intl, fileinfo
           coverage: xdebug
-          tools: composer:v2
+          tools: composer:v2, phpstan
         env:
           COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -42,14 +41,19 @@ jobs:
       - name: ⚡ Cache dependencies
         uses: actions/cache@v3
         with:
-          path: ${{ steps.composer-cache.outputs.dir }}
+          path: |
+            ${{ steps.composer-cache.outputs.dir }}
+            vendor
+            .phpunit.cache
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-composer-
             ${{ runner.os }}-
 
       - name: 📥 Install dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          composer show laravel/framework
         
       - name: 🗂️ Create test result directories
         run: |
@@ -79,9 +83,12 @@ jobs:
           DB_DATABASE=:memory:
 
           CACHE_DRIVER=array
+          CACHE_STORE=array
           SESSION_DRIVER=array
           QUEUE_CONNECTION=sync
-
+          
+          # Laravel 12 specific settings
+          PRECOGNITION_ENABLED=true
           MAIL_MAILER=array
           EOF
 
@@ -95,8 +102,13 @@ jobs:
           export XDEBUG_MODE=coverage
           php -v
           php -m | grep xdebug
-          php artisan test --env=testing --coverage-clover build/logs/clover.xml --coverage-text --testdox
           
+          # Check for Laravel 12 deprecations during tests
+          echo "Running PHP Stan analysis for deprecations..."
+          vendor/bin/phpstan analyse app --level=0 --no-progress || true
+          
+          echo "Running tests with code coverage..."
+          php artisan test --env=testing --coverage-clover build/logs/clover.xml --coverage-text --testdox
           # Verify coverage file was created
           echo "Checking coverage file..."
           ls -la build/logs/
@@ -129,6 +141,7 @@ jobs:
           CI_BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CI_BRANCH: ${{ github.ref_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          XDEBUG_MODE: coverage
         run: |
           echo "==================== COVERALLS DEBUG INFO ===================="
           echo "Uploading coverage results to Coveralls..."

@@ -14,21 +14,24 @@
         "ext-openssl": "*",
         "ext-pdo": "*",
         "ext-tokenizer": "*",
-        "guzzlehttp/guzzle": "^7.7",
-        "laravel/framework": "^10.0",
-        "laravel/sanctum": "^3.3",
-        "laravel/tinker": "^2.8"
+        "ext-filter": "*",
+        "ext-hash": "*",
+        "ext-session": "*",
+        "guzzlehttp/guzzle": "^7.8",
+        "laravel/framework": "^12.0",
+        "laravel/sanctum": "^4.0",
+        "laravel/tinker": "^2.9"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
         "laravel/pail": "^1.2",
         "laravel/pint": "^1.13",
-        "laravel/sail": "^1.25",
+        "laravel/sail": "^1.26",
         "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^7.0",
+        "nunomaduro/collision": "^8.0",
         "php-coveralls/php-coveralls": "^2.7",
-        "phpunit/phpunit": "^10.4",
-        "spatie/laravel-ignition": "^2.0"
+        "phpunit/phpunit": "^11.0",
+        "spatie/laravel-ignition": "^2.4"
     },
     "autoload": {
         "psr-4": {
@@ -67,16 +70,23 @@
             "@php artisan test"
         ],
         "test:coverage": [
+            "@php -d xdebug.mode=coverage -r \"echo 'Xdebug Mode: ' . (extension_loaded('xdebug') ? ini_get('xdebug.mode') : 'Not loaded') . PHP_EOL;\"",
             "XDEBUG_MODE=coverage php artisan test --coverage"
         ],
         "test:coverage-html": [
+            "@php -d xdebug.mode=coverage -r \"echo 'Xdebug Mode: ' . (extension_loaded('xdebug') ? ini_get('xdebug.mode') : 'Not loaded') . PHP_EOL;\"",
             "XDEBUG_MODE=coverage php artisan test --coverage-html build/coverage"
         ],
         "test:coverage-clover": [
-            "XDEBUG_MODE=coverage php artisan test --coverage-clover build/logs/clover.xml"
+            "@php -d xdebug.mode=coverage -r \"echo 'Xdebug Mode: ' . (extension_loaded('xdebug') ? ini_get('xdebug.mode') : 'Not loaded') . PHP_EOL;\"",
+            "XDEBUG_MODE=coverage php -d xdebug.mode=coverage artisan test --coverage-clover build/logs/clover.xml"
         ],
         "coveralls": [
             "php vendor/bin/php-coveralls -v"
+        ],
+        "test:with-coverage": [
+            "@php -r \"if (!extension_loaded('xdebug')) { echo 'Xdebug is not installed. Code coverage requires Xdebug.'; exit(1); }\"",
+            "XDEBUG_MODE=coverage php artisan test --coverage-clover build/logs/clover.xml --coverage-text"
         ]
     },
     "extra": {

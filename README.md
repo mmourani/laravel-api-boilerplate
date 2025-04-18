@@ -1,11 +1,16 @@
 # Laravel SaaS Boilerplate
 
-A modular and secure SaaS boilerplate using **Laravel (API-only)** with token-based authentication, ownership policies, and scalable structure.
+A modular and secure SaaS boilerplate using **Laravel 12 (API-only)** with token-based authentication, ownership policies, and scalable structure.
 
 [![Tests](https://github.com/mmourani/laravel-api-boilerplate/actions/workflows/tests.yml/badge.svg)](https://github.com/mmourani/laravel-api-boilerplate/actions/workflows/tests.yml)
 [![Coverage Status](https://coveralls.io/repos/github/mmourani/laravel-api-boilerplate/badge.svg?branch=main)](https://coveralls.io/github/mmourani/laravel-api-boilerplate?branch=main)
 
 ## Features
+
+### Laravel 12.x
+- Built on the latest Laravel 12 framework
+- Modern PHP 8.2+ syntax with type declarations
+- Enhanced performance and security features
 
 ### Authentication
 
@@ -49,9 +54,10 @@ A modular and secure SaaS boilerplate using **Laravel (API-only)** with token-ba
 
 ## Requirements
 
-- PHP 8.2+
-- Composer
+- PHP 8.2+ (8.3+ recommended)
+- Composer 2.5+
 - MySQL 8.0+ or SQLite
+- Node.js 18+ and NPM (if using frontend)
 
 ## Installation
 
@@ -89,8 +95,19 @@ composer test:coverage-html
 # Generate Clover XML for CI
 composer test:coverage-clover
 ```
-
 The HTML coverage report will be available in the `build/coverage` directory.
+
+> **Note:** Code coverage reports require Xdebug to be installed and properly configured. If you're seeing warnings about Xdebug mode, make sure Xdebug is installed and the coverage mode is enabled. The test commands will attempt to enable it automatically, but you may need to configure it in your php.ini file.
+
+### Testing with PHPUnit 11
+### Testing with PHPUnit 11
+
+This project uses PHPUnit 11 for testing, which requires PHP 8.2+. The test suite is configured to run with:
+
+- In-memory SQLite database
+- Preconfigured factories for all models
+- Complete ownership policy testing
+- API endpoint testing with JSON validation
 
 ## API Testing Examples
 
@@ -152,9 +169,18 @@ For detailed deployment instructions, refer to the [deployment documentation](do
 ## CI/CD Pipeline
 
 This repository includes GitHub Actions workflows for:
-- Automated testing
-- Code coverage reporting
-- Continuous integration
+- Automated testing on PHP 8.2+
+- Code coverage reporting with Coveralls integration
+- Continuous integration with dependency validation
+- PHPUnit 11 test suite execution
+
+### Laravel 12 Specific Features
+
+- New routing and middleware system
+- Improved validator with more precise type checking
+- Enhanced Sanctum authentication (v4.x)
+- Precognition support for form validation
+- Improved error handling and debugging
 
 ## License
 
