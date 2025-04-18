@@ -12,7 +12,7 @@
         "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
-        "php-coveralls/php-coveralls": "^2.5",
+        "php-coveralls/php-coveralls": "^2.7",
         "phpunit/phpunit": "^11.5"
     },
     "autoload": {
@@ -79,5 +79,9 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "require": {
+        "laravel/sanctum": "^4.0",
+        "laravel/tinker": "^2.10"
+    }
 }
