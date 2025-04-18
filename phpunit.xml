@@ -14,11 +14,14 @@
         </testsuite>
     </testsuites>
 
-    <source>
+    <coverage>
         <include>
-            <directory>app</directory>
+            <directory suffix=".php">app</directory>
         </include>
-    </source>
+        <report>
+            <clover outputFile="build/logs/clover.xml"/>
+        </report>
+    </coverage>
 
     <php>
         <env name="APP_ENV" value="testing"/>
@@ -27,16 +30,5 @@
         <env name="CACHE_STORE" value="array"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="TELESCOPE_ENABLED" value="false"/>
-        <env name="PULSE_ENABLED" value="false"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
     </php>
-
-<coverage>
-    <report>
-        <clover outputFile="build/logs/clover.xml"/>
-    </report>
-</coverage>
-
 </phpunit>
