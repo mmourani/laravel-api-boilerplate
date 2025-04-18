@@ -1,35 +1,107 @@
-name: Run Tests & Report Coverage
+name: Tests
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
-  test:
+  laravel-tests:
+    name: Laravel Tests (PHP 8.2)
     runs-on: ubuntu-latest
+    
+    # Using SQLite for faster tests instead of MySQL
+    # This matches our phpunit.xml configuration for in-memory database
 
     steps:
-      - name: ⬇️ Checkout repository
+      - name: ⬇️ Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
 
-      - name: ⚙️ Set up PHP
+      - name: 🔧 Setup PHP with Xdebug
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2"
-          extensions: mbstring, pdo, pdo_sqlite, dom, curl
-          tools: composer
+          php-version: '8.2'
+          extensions: mbstring, pdo, sqlite3, pdo_sqlite, gd, zip, bcmath, exif, pcntl, xdebug
+          coverage: xdebug
+          tools: composer:v2
+        env:
+          COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📦 Install dependencies
-        run: composer install --prefer-dist --no-progress
+      - name: 📦 Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
-      - name: 🧪 Run PHPUnit tests with coverage
+      - name: ⚡ Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+            ${{ runner.os }}-
+
+      - name: 📥 Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+        
+      - name: 🗂️ Create test result directories
         run: |
           mkdir -p build/logs
-          ./vendor/bin/phpunit --coverage-clover build/logs/clover.xml
+          mkdir -p build/coverage
 
-      - name: 📤 Upload coverage to Coveralls
-        run: ./vendor/bin/php-coveralls --verbose
+      - name: 🔧 Prepare Laravel application
+        run: |
+          cp .env.example .env.testing
+          php artisan key:generate --env=testing
+          echo "APP_ENV=testing" >> .env.testing
+          echo "DB_CONNECTION=sqlite" >> .env.testing
+          echo "DB_DATABASE=:memory:" >> .env.testing
+
+      - name: 📂 Set directory permissions
+        run: chmod -R 777 storage bootstrap/cache
+
+      - name: 🧪 Run tests with coverage
+        run: |
+          XDEBUG_MODE=coverage php artisan test --env=testing --coverage-clover build/logs/clover.xml
+          
+      - name: 📊 Generate HTML coverage report
+        run: |
+          XDEBUG_MODE=coverage php artisan test --env=testing --coverage-html build/coverage
+        if: success()
+        
+      - name: 🔍 Check code coverage percentage
+        run: |
+          COVERAGE=$(php -r 'libxml_use_internal_errors(true); $xml = simplexml_load_file("build/logs/clover.xml"); echo round((float) $xml->project->metrics["coveredelements"] / $xml->project->metrics["elements"] * 100, 2);')
+          echo "Code coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "::warning::Code coverage (${COVERAGE}%) is below the 80% threshold"
+          fi
+        if: success()
+
+      - name: 📤 Upload coverage results to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/logs/clover.xml
+          format: clover
+        if: success()
+        
+      - name: 📦 Archive code coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-coverage-report
+          path: build/coverage
+        if: success()
+        
+      - name: 🚨 Notify on failure
+        uses: rtCamp/action-slack-notify@v2
         env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: ci-alerts
+          SLACK_COLOR: '#FF0000'
+          SLACK_TITLE: 'Test failed!'
+          SLACK_MESSAGE: 'Tests failed on ${{ github.ref_name }} branch. See ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        if: failure() && env.SLACK_WEBHOOK != ''
+
