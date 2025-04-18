@@ -107,12 +107,6 @@ jobs:
             echo "❌ Coverage file missing!"
           fi
           
-      - name: 📊 Generate HTML coverage report
-        if: success()
-        run: |
-          echo "Generating HTML coverage report..."
-          XDEBUG_MODE=coverage php artisan test --env=testing --coverage-html build/coverage
-        
       - name: 🔍 Check code coverage percentage
         if: success()
         run: |
@@ -129,45 +123,56 @@ jobs:
         if: success()
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-          COVERALLS_PARALLEL: true
-          COVERALLS_FLAG_NAME: php-8.2-test
+          CI_NAME: github-actions
+          CI_JOB_ID: ${{ github.run_id }}
+          CI_BUILD_NUMBER: ${{ github.run_number }}
+          CI_BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CI_BRANCH: ${{ github.ref_name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "==================== COVERALLS DEBUG INFO ===================="
           echo "Uploading coverage results to Coveralls..."
           echo "Working directory: $(pwd)"
           echo "Repository: $GITHUB_REPOSITORY"
-          echo "Coverage file location:"
+          echo "Branch: $CI_BRANCH"
+          echo "Job ID: $CI_JOB_ID"
+          echo "Build #: $CI_BUILD_NUMBER"
+          
+          echo "Checking coverage file:"
           ls -la build/logs/
           
           if [ -f build/logs/clover.xml ]; then
-            echo "Coverage XML content preview:"
-            head -n 20 build/logs/clover.xml
+            echo "Coverage file exists and has size: $(du -h build/logs/clover.xml | cut -f1)"
             
-            # Calculate coverage percentage for verification
-            COVERAGE=$(php -r 'libxml_use_internal_errors(true); $xml = simplexml_load_file("build/logs/clover.xml"); echo round((float) $xml->project->metrics["coveredelements"] / $xml->project->metrics["elements"] * 100, 2);')
+            echo "First 30 lines of coverage report:"
+            head -n 30 build/logs/clover.xml
+            
+            echo "Calculating coverage percentage:"
+            COVERAGE=$(php -r 'libxml_use_internal_errors(true); $xml = simplexml_load_file("build/logs/clover.xml"); if($xml) { echo round((float) $xml->project->metrics["coveredelements"] / $xml->project->metrics["elements"] * 100, 2); } else { echo "Error parsing XML"; }')
             echo "Calculated coverage: ${COVERAGE}%"
             
-            # Create debug .coveralls.yml for inspection
-            echo "service_name: github-actions" > .coveralls.yml.debug
-            echo "repo_token: [SECRET]" >> .coveralls.yml.debug
-            echo "coverage_clover: build/logs/clover.xml" >> .coveralls.yml.debug
-            echo "json_path: build/logs/coveralls-upload.json" >> .coveralls.yml.debug
-            cat .coveralls.yml.debug
+            # Create explicit .coveralls.yml for the upload
+            echo "service_name: github-actions" > .coveralls.yml
+            echo "repo_token: $COVERALLS_REPO_TOKEN" >> .coveralls.yml
+            echo "coverage_clover: build/logs/clover.xml" >> .coveralls.yml
+            echo "json_path: build/logs/coveralls-upload.json" >> .coveralls.yml
             
-            # Run Coveralls with maximum verbosity
+            echo "Running PHP Coveralls with maximum verbosity"
             vendor/bin/php-coveralls -v --env=prod
+            
+            echo "Checking generated JSON file for upload:"
+            if [ -f build/logs/coveralls-upload.json ]; then
+              echo "JSON file exists with size: $(du -h build/logs/coveralls-upload.json | cut -f1)"
+              jq -C '.git .service_name .repo_token' build/logs/coveralls-upload.json || echo "JQ not available to parse JSON"
+            else
+              echo "Error: JSON file for Coveralls upload was not generated"
+              exit 1
+            fi
           else
             echo "Error: Coverage file not found"
             exit 1
           fi
-        
-      - name: 📦 Archive code coverage results
-        if: success()
-        uses: actions/upload-artifact@v2
-        with:
-          name: code-coverage-report
-          path: build/coverage
-          retention-days: 7
-          if-no-files-found: warn
+          echo "============================================================="
         
       - name: 🚨 Capture and report test failures
         if: failure()
