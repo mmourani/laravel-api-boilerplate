@@ -69,4 +69,4 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-clover: build/logs/clover.xml
+          path-to-lcov: build/logs/clover.xml
