@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="tests/Bootstrap.php"
          colors="true"
          stopOnFailure="false">
 
@@ -14,22 +14,37 @@
         </testsuite>
     </testsuites>
 
-    <coverage processUncoveredFiles="true">
+    <source>
         <include>
             <directory suffix=".php">app</directory>
         </include>
+        <exclude>
+            <directory suffix=".php">vendor</directory>
+            <directory suffix=".php">tests</directory>
+            <directory suffix=".php">bootstrap</directory>
+            <directory suffix=".php">database</directory>
+            <directory suffix=".php">resources</directory>
+            <directory suffix=".php">storage</directory>
+            <directory suffix=".php">config</directory>
+            <directory suffix=".php">public</directory>
+        </exclude>
+    </source>
+    <coverage>
+        <report>
+            <clover outputFile="build/logs/clover.xml"/>
+            <html outputDirectory="build/coverage" lowUpperBound="70" highLowerBound="90"/>
+        </report>
     </coverage>
 
     <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="DB_CONNECTION" value="mysql"/>
-        <env name="DB_HOST" value="127.0.0.1"/>
-        <env name="DB_PORT" value="3306"/>
-        <env name="DB_DATABASE" value="testing"/>
-        <env name="DB_USERNAME" value="root"/>
-        <env name="DB_PASSWORD" value="root"/>
-        <env name="CACHE_STORE" value="array"/>
-        <env name="SESSION_DRIVER" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
+        <server name="APP_ENV" value="testing"/>
+        <server name="DB_CONNECTION" value="sqlite"/>
+        <server name="DB_DATABASE" value=":memory:"/>
+        <server name="CACHE_DRIVER" value="array"/>
+        <server name="SESSION_DRIVER" value="array"/>
+        <server name="QUEUE_CONNECTION" value="sync"/>
+        <server name="TELESCOPE_ENABLED" value="false"/>
+        <server name="DB_FOREIGN_KEYS" value="true"/>
+        <server name="DEBUG_DISABLED" value="1"/>
     </php>
 </phpunit>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="/Users/user/Sites/saas-boilerplate/backend/phpunit.xml" tests="26" assertions="66" errors="0" failures="0" skipped="5" time="2.430057">
+    <testsuite name="Feature" tests="25" assertions="65" errors="0" failures="0" skipped="5" time="2.428949">
+      <testsuite name="Tests\Feature\Auth\AuthControllerTest" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" tests="14" assertions="40" errors="0" failures="0" skipped="0" time="2.142281">
+        <testcase name="test_register_validates_required_fields" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="15" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="5" time="0.464562"/>
+        <testcase name="test_register_validates_email_format" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="23" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="3" time="0.030281"/>
+        <testcase name="test_register_validates_password_confirmation" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="36" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="3" time="0.021928"/>
+        <testcase name="test_register_validates_unique_email" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="49" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="3" time="0.263263"/>
+        <testcase name="test_login_validates_required_fields" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="65" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="4" time="0.021600"/>
+        <testcase name="test_login_validates_email_format" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="73" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="3" time="0.021088"/>
+        <testcase name="test_login_with_non_existent_user" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="84" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="2" time="0.022849"/>
+        <testcase name="test_login_with_wrong_password" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="95" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="2" time="0.464804"/>
+        <testcase name="test_user_endpoint_requires_authentication" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="111" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="1" time="0.021894"/>
+        <testcase name="test_user_endpoint_returns_correct_user" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="117" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="2" time="0.037395"/>
+        <testcase name="test_logout_requires_authentication" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="132" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="1" time="0.019700"/>
+        <testcase name="test_successful_logout_deletes_current_token" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="138" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="3" time="0.028619"/>
+        <testcase name="test_successful_registration_returns_correct_structure" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="160" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="4" time="0.251457"/>
+        <testcase name="test_successful_login_returns_correct_structure" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/Auth/AuthControllerTest.php" line="178" class="Tests\Feature\Auth\AuthControllerTest" classname="Tests.Feature.Auth.AuthControllerTest" assertions="4" time="0.472842"/>
+      </testsuite>
+      <testsuite name="Tests\Feature\ExampleTest" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ExampleTest.php" tests="1" assertions="2" errors="0" failures="0" skipped="0" time="0.021509">
+        <testcase name="test_api_health_check" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ExampleTest.php" line="10" class="Tests\Feature\ExampleTest" classname="Tests.Feature.ExampleTest" assertions="2" time="0.021509"/>
+      </testsuite>
+      <testsuite name="Tests\Feature\ProjectControllerTest" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ProjectControllerTest.php" tests="10" assertions="23" errors="0" failures="0" skipped="5" time="0.265158">
+        <testcase name="test_index_pagination_with_custom_per_page" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ProjectControllerTest.php" line="26" class="Tests\Feature\ProjectControllerTest" classname="Tests.Feature.ProjectControllerTest" assertions="10" time="0.058116"/>
+        <testcase name="test_index_with_invalid_per_page" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ProjectControllerTest.php" line="69" class="Tests\Feature\ProjectControllerTest" classname="Tests.Feature.ProjectControllerTest" assertions="2" time="0.021570"/>
+        <testcase name="test_index_with_empty_search_results" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ProjectControllerTest.php" line="82" class="Tests\Feature\ProjectControllerTest" classname="Tests.Feature.ProjectControllerTest" assertions="7" time="0.027866"/>
+        <testcase name="test_show_logs_debug_information" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ProjectControllerTest.php" line="121" class="Tests\Feature\ProjectControllerTest" classname="Tests.Feature.ProjectControllerTest" assertions="1" time="0.028038"/>
+        <testcase name="test_restore_already_active_project" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ProjectControllerTest.php" line="145" class="Tests\Feature\ProjectControllerTest" classname="Tests.Feature.ProjectControllerTest" assertions="0" time="0.021926">
+          <skipped/>
+        </testcase>
+        <testcase name="test_restore_nonexistent_project" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ProjectControllerTest.php" line="163" class="Tests\Feature\ProjectControllerTest" classname="Tests.Feature.ProjectControllerTest" assertions="0" time="0.019413">
+          <skipped/>
+        </testcase>
+        <testcase name="test_restore_handles_database_error" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ProjectControllerTest.php" line="183" class="Tests\Feature\ProjectControllerTest" classname="Tests.Feature.ProjectControllerTest" assertions="0" time="0.021261">
+          <skipped/>
+        </testcase>
+        <testcase name="test_restore_unauthorized_user" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ProjectControllerTest.php" line="215" class="Tests\Feature\ProjectControllerTest" classname="Tests.Feature.ProjectControllerTest" assertions="0" time="0.019947">
+          <skipped/>
+        </testcase>
+        <testcase name="test_update_with_partial_data" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ProjectControllerTest.php" line="238" class="Tests\Feature\ProjectControllerTest" classname="Tests.Feature.ProjectControllerTest" assertions="3" time="0.026533"/>
+        <testcase name="test_show_with_debug_logging_disabled" file="/Users/user/Sites/saas-boilerplate/backend/tests/Feature/ProjectControllerTest.php" line="258" class="Tests\Feature\ProjectControllerTest" classname="Tests.Feature.ProjectControllerTest" assertions="0" time="0.020488">
+          <skipped/>
+        </testcase>
+      </testsuite>
+    </testsuite>
+    <testsuite name="Unit" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.001108">
+      <testsuite name="Tests\Unit\ExampleTest" file="/Users/user/Sites/saas-boilerplate/backend/tests/Unit/ExampleTest.php" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.001108">
+        <testcase name="test_that_true_is_true" file="/Users/user/Sites/saas-boilerplate/backend/tests/Unit/ExampleTest.php" line="12" class="Tests\Unit\ExampleTest" classname="Tests.Unit.ExampleTest" assertions="1" time="0.001108"/>
+      </testsuite>
+    </testsuite>
+  </testsuite>
+</testsuites>

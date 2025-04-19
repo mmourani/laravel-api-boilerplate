@@ -2,19 +2,46 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Services\ProjectService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Log;
 
 class ProjectController extends Controller
 {
     use AuthorizesRequests;
+
+    protected ProjectService $service;
+
+    public function __construct(ProjectService $service)
+    {
+        $this->service = $service;
+    }
+
     /**
      * List the authenticated user's projects.
      */
     public function index(Request $request)
     {
-        return $request->user()->projects()->latest()->get();
+        $query = $request->user()->projects()->latest();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = $request->input('per_page', 15);
+        if (is_numeric($perPage)) {
+            return JsonResource::collection($query->paginate($perPage));
+        }
+
+        return JsonResource::collection($query->get());
     }
 
     /**
@@ -33,7 +60,7 @@ class ProjectController extends Controller
     }
 
     /**
-     * Show a specific project (only if owned by the user).
+     * Show a specific project.
      */
     public function show(Project $project)
     {
@@ -43,7 +70,7 @@ class ProjectController extends Controller
     }
 
     /**
-     * Update an existing project (only if owned by the user).
+     * Update an existing project.
      */
     public function update(Request $request, Project $project)
     {
@@ -60,7 +87,7 @@ class ProjectController extends Controller
     }
 
     /**
-     * Delete a project (only if owned by the user).
+     * Delete a project.
      */
     public function destroy(Project $project)
     {
@@ -69,5 +96,36 @@ class ProjectController extends Controller
         $project->delete();
 
         return response()->json(['message' => 'Project deleted successfully']);
+    }
+
+    /**
+     * Restore a soft-deleted project.
+     */
+    public function restore($id)
+    {
+        try {
+            $project = Project::withTrashed()->findOrFail($id);
+
+            // Check if user is unauthorized
+            if (auth()->user()->cannot('restore', $project)) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            // Already active project
+            if (! $project->trashed()) {
+                return response()->json(['message' => 'Project is not deleted'], 400);
+            }
+
+            // Try restoring
+            $project->restore();
+
+            return response()->json(['message' => 'Project restored successfully']);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Project not found'], 404);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Database error during project restoration: '.$e->getMessage());
+
+            return response()->json(['message' => 'Error restoring project'], 500);
+        }
     }
 }

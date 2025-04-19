@@ -30,4 +30,12 @@ class ProjectPolicy
     {
         return $user->id === $project->user_id;
     }
+
+    /**
+     * Allow restoring only if the user owns the project.
+     */
+    public function restore(User $user, Project $project): bool
+    {
+        return $user->id === $project->user_id;
+    }
 }

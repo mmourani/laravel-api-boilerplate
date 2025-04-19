@@ -1,0 +1,10 @@
+#!/bin/sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+vendor/bin/pint
+
+vendor/bin/phpstan analyse app tests
+
+php artisan test
