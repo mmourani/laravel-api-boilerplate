@@ -1,8 +1,11 @@
-Here’s your fully updated README.md — combining your original with new improvements, badges, links, and polish:
+# 🧱 SaaS Boilerplate Documentation  
+*Last updated: April 19, 2025*  
+
+> For a complete project overview, see [SUMMARY.md](./SUMMARY.md)
 
 ⸻
 
-# 🧱 SaaS Boilerplate Documentation
+## 📌 SaaS Boilerplate Documentation
 
 A modular and secure SaaS boilerplate using **Laravel (API-only)** with token-based authentication, ownership policies, and scalable structure.
 
@@ -24,45 +27,22 @@ Sites/
 
 ## ✅ Features Implemented
 
-### 🔐 Authentication
+### ✅ Features Implemented  
 
--   Laravel Sanctum for API token auth
--   Endpoints:
-    -   `POST /api/register`
-    -   `POST /api/login`
-    -   `POST /api/logout`
-    -   `GET  /api/user`
--   Token returned on login, required for all protected endpoints
+#### 🔐 Authentication  
+- Token-based auth using Laravel Sanctum  
+- All standard authentication flows  
+- Protected endpoints with policies  
 
-### 🧱 Projects Module
+#### 📁 Projects Module  
+- Full CRUD operations  
+- Ownership protection via policies  
+- Soft delete functionality  
 
--   Model: `Project`
--   Linked to user via `user_id`
--   Full CRUD:
-    -   `GET /api/projects`
-    -   `POST /api/projects`
-    -   `GET /api/projects/{id}`
-    -   `PUT /api/projects/{id}`
-    -   `DELETE /api/projects/{id}`
--   Ownership protected via `ProjectPolicy`
-
-### ✅ Tasks Module
-
--   Model: `Task`
--   Linked to projects via `project_id`
--   Fields: `title`, `done`, `priority`, `due_date`
--   Endpoints (nested):
-    -   `GET /api/projects/{project}/tasks`
-    -   `POST /api/projects/{project}/tasks`
-    -   `GET /api/projects/{project}/tasks/{task}`
-    -   `PUT /api/projects/{project}/tasks/{task}`
-    -   `DELETE /api/projects/{project}/tasks/{task}`
--   Filtering support:
-    -   `?priority=high`
-    -   `?done=true`
-    -   `?due_date=2025-04-25`
-    -   `?sort_by=due_date&direction=desc`
--   Ownership protected via `ProjectPolicy`
+#### ✅ Tasks Module  
+- Project-nested CRUD operations  
+- Advanced filtering & sorting  
+- State management  
 
 ---
 
@@ -128,14 +108,13 @@ Every push and PR to main runs automated tests and (optionally) code coverage wi
 
 ⸻
 
-📌 Next Steps (Planned)
-	•	Clients module
-	•	Teams or Roles
-	•	Global task listing: /api/tasks
-	•	React frontend
-	•	Supabase integration
-	•	Workflow automation via N8N
-	•	Docker/CI/CD setup
+## 🚧 Next Steps  
+
+1. Complete coverage improvement sprint (target: May 16, 2025)  
+2. Implement subscription/payment system  
+3. Begin frontend integration planning  
+
+*For detailed roadmap, see [Development Plan](./docs/DEVELOPMENT_PLAN.md)*  
 
 ---
 ```

@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Task;
 use App\Models\Project;
-use Illuminate\Http\Request;
+use App\Models\Task;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
     use AuthorizesRequests;
+
     /**
      * List all tasks for a given project.
      */
@@ -42,6 +43,7 @@ class TaskController extends Controller
 
         return $query->get();
     }
+
     /**
      * Store a new task in a project.
      */
