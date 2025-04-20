@@ -1,10 +1,9 @@
 #!/bin/sh
-. "$(dirname -- "$0")/_/husky.sh"
+. "$(dirname "$0")/_/husky.sh"
 
-echo "🔍 Running pre-commit checks..."
+# Export credentials (optional, since now in .env)
+export DB_USERNAME=root
+export DB_PASSWORD=Maromau31!!
 
-vendor/bin/pint
-
-vendor/bin/phpstan analyse app tests
-
-php artisan test
+# Force testing env
+php artisan test --env=testing

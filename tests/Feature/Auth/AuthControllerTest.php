@@ -36,7 +36,7 @@ class AuthControllerTest extends TestCase
     {
         $response = $this->postJson('/api/register', [
             'name' => 'Test User',
-            'email' => 'test@example.com',
+            'email' => fake()->unique()->safeEmail(),
             'password' => 'password',
             'password_confirmation' => 'different-password',
         ]);
@@ -47,12 +47,12 @@ class AuthControllerTest extends TestCase
 
     public function test_register_validates_unique_email()
     {
-        // Create a user first
-        User::factory()->create(['email' => 'existing@example.com']);
+        $email = fake()->unique()->safeEmail();
+        User::factory()->create(['email' => $email]);
 
         $response = $this->postJson('/api/register', [
             'name' => 'Test User',
-            'email' => 'existing@example.com',
+            'email' => $email,
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
@@ -83,7 +83,7 @@ class AuthControllerTest extends TestCase
     public function test_login_with_non_existent_user()
     {
         $response = $this->postJson('/api/login', [
-            'email' => 'nonexistent@example.com',
+            'email' => fake()->unique()->safeEmail(),
             'password' => 'password',
         ]);
 
@@ -93,13 +93,14 @@ class AuthControllerTest extends TestCase
 
     public function test_login_with_wrong_password()
     {
-        $user = User::factory()->create([
-            'email' => 'test@example.com',
+        $email = fake()->unique()->safeEmail();
+        User::factory()->create([
+            'email' => $email,
             'password' => bcrypt('correct-password'),
         ]);
 
         $response = $this->postJson('/api/login', [
-            'email' => 'test@example.com',
+            'email' => $email,
             'password' => 'wrong-password',
         ]);
 
@@ -136,23 +137,18 @@ class AuthControllerTest extends TestCase
 
     public function test_successful_logout_deletes_current_token()
     {
-        $user = User::factory()->create();
+        $user = \App\Models\User::factory()->create();
 
-        // Create a token and store its ID
-        $tokenInstance = $user->createToken('api-token');
-        $tokenId = $tokenInstance->accessToken->id;
-        $token = $tokenInstance->plainTextToken;
+        $token = $user->createToken('TestToken')->plainTextToken;
 
-        // Perform logout
-        $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/api/logout');
-
-        $response->assertOk()
+        $this->withHeaders([
+            'Authorization' => 'Bearer '.$token,
+        ])->postJson('/api/logout')
+            ->assertOk()
             ->assertJson(['message' => 'Logged out']);
 
-        // Verify token was actually deleted from the database
         $this->assertDatabaseMissing('personal_access_tokens', [
-            'id' => $tokenId,
+            'tokenable_id' => $user->id,
         ]);
     }
 
@@ -160,7 +156,7 @@ class AuthControllerTest extends TestCase
     {
         $response = $this->postJson('/api/register', [
             'name' => 'Test User',
-            'email' => 'test@example.com',
+            'email' => fake()->unique()->safeEmail(),
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
@@ -169,20 +165,20 @@ class AuthControllerTest extends TestCase
             ->assertJsonStructure(['token'])
             ->assertJsonPath('token', fn ($token) => is_string($token) && strlen($token) > 0);
 
-        // Verify we can authenticate with the returned token
-        $token = $response->json('token');
-        $this->assertNotEmpty($token, 'Token should not be empty');
+        $this->assertNotEmpty($response->json('token'));
     }
 
     public function test_successful_login_returns_correct_structure()
     {
+        $email = fake()->unique()->safeEmail();
+
         $user = User::factory()->create([
-            'email' => 'test@example.com',
+            'email' => $email,
             'password' => bcrypt('password'),
         ]);
 
         $response = $this->postJson('/api/login', [
-            'email' => 'test@example.com',
+            'email' => $email,
             'password' => 'password',
         ]);
 
@@ -190,8 +186,6 @@ class AuthControllerTest extends TestCase
             ->assertJsonStructure(['token'])
             ->assertJsonPath('token', fn ($token) => is_string($token) && strlen($token) > 0);
 
-        // Verify we can authenticate with the returned token
-        $token = $response->json('token');
-        $this->assertNotEmpty($token, 'Token should not be empty');
+        $this->assertNotEmpty($response->json('token'));
     }
 }

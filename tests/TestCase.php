@@ -2,68 +2,55 @@
 
 namespace Tests;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 use Mockery;
 
 abstract class TestCase extends BaseTestCase
 {
-    use RefreshDatabase;
+    use CreatesApplication;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Disable DB transactions for SQLite when using Xdebug (coverage)
-        if (config('database.default') === 'sqlite') {
-            $this->refreshDatabase();
-        }
-
-        if (DB::connection()->getDriverName() === 'sqlite') {
+        if (config('database.default') === 'sqlite' && config('database.connections.sqlite.database') === ':memory:') {
+            // Run fresh migrations manually
+            $this->artisan('migrate:fresh', ['--seed' => true])->run();
             DB::statement('PRAGMA foreign_keys=ON;');
         }
 
         $this->disableTelescope();
-
-        if (class_exists(\Barryvdh\Debugbar\Debugbar::class)) {
-            \Barryvdh\Debugbar\Debugbar::disable();
-        }
     }
 
     protected function tearDown(): void
     {
-        // Rollback all active transactions
-        while (DB::transactionLevel() > 0) {
-            DB::rollBack();
+        Mockery::close();
+
+        try {
+            DB::rollBack(); // In case a transaction was started
+        } catch (\Throwable $e) {
+            // Prevent errors if no active transaction
         }
 
-        // Disconnect all DB connections to release SQLite locks
         DB::disconnect();
-
-        // Close all Mockery expectations
-        Mockery::close();
 
         parent::tearDown();
     }
 
     protected function disableTelescope(): void
     {
-        // Disable config
         config(['telescope.enabled' => false]);
         putenv('TELESCOPE_ENABLED=false');
 
-        // Unbind from container if registered
         if ($this->app->bound('Laravel\Telescope\Telescope')) {
             $this->app->offsetUnset('Laravel\Telescope\Telescope');
         }
 
-        // Stop active recording
         if (class_exists('Laravel\Telescope\Telescope')) {
             \Laravel\Telescope\Telescope::stopRecording();
         }
 
-        // Clean up callbacks
         $this->beforeApplicationDestroyed(function () {
             if (class_exists('Laravel\Telescope\Telescope')) {
                 $reflection = new \ReflectionClass($this->app);
@@ -74,5 +61,11 @@ abstract class TestCase extends BaseTestCase
                 }
             }
         });
+    }
+
+    // Prevent Laravel from wrapping tests in transactions
+    protected function beginDatabaseTransaction()
+    {
+        // Override to skip automatic transaction
     }
 }

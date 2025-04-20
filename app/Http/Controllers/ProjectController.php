@@ -4,128 +4,80 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Services\ProjectService;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Log;
 
 class ProjectController extends Controller
 {
-    use AuthorizesRequests;
+    protected ProjectService $projectService;
 
-    protected ProjectService $service;
-
-    public function __construct(ProjectService $service)
+    public function __construct(ProjectService $projectService)
     {
-        $this->service = $service;
+        $this->projectService = $projectService;
     }
 
-    /**
-     * List the authenticated user's projects.
-     */
-    public function index(Request $request)
-    {
-        $query = $request->user()->projects()->latest();
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
-        $perPage = $request->input('per_page', 15);
-        if (is_numeric($perPage)) {
-            return JsonResource::collection($query->paginate($perPage));
-        }
-
-        return JsonResource::collection($query->get());
-    }
-
-    /**
-     * Store a new project.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
-
-        $project = $request->user()->projects()->create($validated);
-
-        return response()->json($project, 201);
-    }
-
-    /**
-     * Show a specific project.
-     */
-    public function show(Project $project)
-    {
-        $this->authorize('view', $project);
-
-        return response()->json($project);
-    }
-
-    /**
-     * Update an existing project.
-     */
-    public function update(Request $request, Project $project)
-    {
-        $this->authorize('update', $project);
-
-        $request->validate([
-            'title' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
-
-        $project->update($request->only(['title', 'description']));
-
-        return response()->json($project);
-    }
-
-    /**
-     * Delete a project.
-     */
-    public function destroy(Project $project)
-    {
-        $this->authorize('delete', $project);
-
-        $project->delete();
-
-        return response()->json(['message' => 'Project deleted successfully']);
-    }
-
-    /**
-     * Restore a soft-deleted project.
-     */
-    public function restore($id)
+    public function index(Request $request): JsonResponse
     {
         try {
-            $project = Project::withTrashed()->findOrFail($id);
+            $projects = Project::query()
+                ->where('user_id', auth()->id())
+                ->when($request->search, function ($query, $search) {
+                    $query->where('title', 'like', "%{$search}%");
+                })
+                ->get();
 
-            // Check if user is unauthorized
-            if (auth()->user()->cannot('restore', $project)) {
-                return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['data' => $projects]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to fetch projects', ['error' => $e->getMessage()]);
+
+            return response()->json(['message' => 'Server error'], 500);
+        }
+    }
+
+    public function update(Request $request, Project $project): JsonResponse
+    {
+        if ($project->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $data = $request->only(['title', 'description']);
+
+        try {
+            $project->update($data);
+
+            return response()->json($project);
+        } catch (\Throwable $e) {
+            Log::error('Failed to update project', ['error' => $e->getMessage()]);
+
+            return response()->json(['message' => 'Failed to update project'], 500);
+        }
+    }
+
+    public function restore(int $id): JsonResponse
+    {
+        try {
+            $project = Project::withTrashed()->find($id);
+
+            if (! $project) {
+                return response()->json(['message' => 'Project not found'], 404);
             }
 
-            // Already active project
+            if ($project->user_id !== auth()->id()) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+
             if (! $project->trashed()) {
                 return response()->json(['message' => 'Project is not deleted'], 400);
             }
 
-            // Try restoring
-            $project->restore();
+            $restored = $this->projectService->restore($id);
 
             return response()->json(['message' => 'Project restored successfully']);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Project not found'], 404);
-        } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('Database error during project restoration: '.$e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Restore failed', ['error' => $e->getMessage()]);
 
-            return response()->json(['message' => 'Error restoring project'], 500);
+            return response()->json(['message' => 'Failed to restore project'], 500);
         }
     }
 }
