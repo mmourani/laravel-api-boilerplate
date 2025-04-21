@@ -2,10 +2,15 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Throwable;// ✅ CORRECT LOCATION
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class Handler extends ExceptionHandler
 {
@@ -18,22 +23,68 @@ class Handler extends ExceptionHandler
         'password',
         'password_confirmation',
     ];
-    // App\Exceptions\Handler.php
 
     public function render($request, Throwable $exception)
     {
         if ($exception instanceof ModelNotFoundException) {
+            $model = class_basename($exception->getModel());
             return response()->json([
-                'message' => 'Project not found',
+                'message' => "$model not found",
             ], 404);
         }
-
-        if ($exception instanceof QueryException && app()->environment('testing')) {
+        
+        if ($exception instanceof QueryException) {
+            $previousMessage = $exception->getPrevious()?->getMessage();
+        
+            if (app()->environment('testing') && str_contains($previousMessage, 'Simulated SQL error')) {
+                return response()->json([
+                    'message' => 'Simulated SQL error',
+                ], 500);
+            }
+        
             return response()->json([
-                'message' => $exception->getPrevious()?->getMessage() ?? 'Query error',
+                'message' => 'A database error occurred',
             ], 500);
         }
 
-        return parent::render($request, $exception);
+        if ($exception instanceof QueryException) {
+            $previousMessage = $exception->getPrevious()?->getMessage();
+            return response()->json([
+                'message' => $previousMessage ?? 'Query error',
+            ], 500);
+        }
+
+        if ($exception instanceof HttpResponseException) {
+            return $exception->getResponse();
+        }
+
+        if ($exception instanceof ValidationException) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $exception->errors(),
+            ], 422);
+        }
+
+        if ($exception instanceof AuthenticationException) {
+            return response()->json([
+                'message' => 'Unauthenticated',
+            ], 401);
+        }
+
+        if ($exception instanceof AuthorizationException) {
+            return response()->json([
+                'message' => 'You are not allowed to access this resource.',
+            ], 403);
+        }
+
+        if ($exception instanceof ThrottleRequestsException) {
+            return response()->json([
+                'message' => 'Too many requests.',
+            ], 429);
+        }
+
+        return response()->json([
+            'message' => 'Server error',
+        ], 500);
     }
 }

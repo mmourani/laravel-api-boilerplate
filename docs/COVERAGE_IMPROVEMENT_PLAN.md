@@ -12,10 +12,11 @@
 
 *Total testable lines: 468*
 
-## 1. Fix Coverage Configuration (Priority: High)
-- Update `phpunit.xml` to exclude middleware and kernel/handler files:
-  ```xml
-  <coverage>
+### Test Database Configuration
+- MySQL 8.0 (Forge provisioned)
+- Database transactions for isolation
+- Laravel database factories
+- Separate test database user
     <include>
       <directory suffix=".php">app</directory>
     </include>

@@ -41,18 +41,22 @@
 
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_URL" value="http://localhost"/>
         <env name="DB_CONNECTION" value="mysql"/>
         <env name="DB_DATABASE" value="testing"/>
         <env name="DB_USERNAME" value="root"/>
         <env name="DB_PASSWORD" value="Maromau31!!"/>
+
         <env name="CACHE_DRIVER" value="array"/>
         <env name="SESSION_DRIVER" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="QUEUE_CONNECTION" value="redis"/>
+        <env name="REDIS_CLIENT" value="phpredis"/>
+        <env name="REDIS_HOST" value="127.0.0.1"/>
+        <env name="REDIS_PORT" value="6379"/>
+
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="DB_FOREIGN_KEYS" value="true"/>
-        <env name="DEBUG_DISABLED" value="1"/>
-
-        <!-- ✅ Disable Laravel's test transaction wrapping -->
         <env name="DB_TRANSACTIONS" value="false"/>
+        <env name="DEBUG_DISABLED" value="1"/>
     </php>
 </phpunit>

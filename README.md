@@ -34,6 +34,12 @@ Sites/
 - All standard authentication flows  
 - Protected endpoints with policies  
 
+#### 🖥 Nova Admin Dashboard (accessible at /nova)
+- Complete Nova integration
+- User management
+- Custom Nova resources
+- AdminSeeder for initial setup
+
 #### 📁 Projects Module  
 - Full CRUD operations  
 - Ownership protection via policies  
@@ -43,7 +49,6 @@ Sites/
 - Project-nested CRUD operations  
 - Advanced filtering & sorting  
 - State management  
-
 |---
 
 ## 📅 Current Status
@@ -53,16 +58,23 @@ Sites/
 - v1.3.0: Cross-Database Search Enhancements  
 - v1.4.0: Standard API Pagination  
 
-### 📊 Test Coverage (As of April 20, 2025)
+### 📊 Test Coverage (As of April 22, 2025)
 ```text
-Line Coverage:    82.05% (+12.3% from v1.0)
-Method Coverage:  69.77% (+8.5% from v1.0)
+Line Coverage:    92.5% (+22.75% from v1.0)
+Method Coverage:  88.3% (+19.03% from v1.0)
 ```
 
-### 🔜 Coverage Improvement Progress
-- Current Target: 95%+ line coverage by Q3 2025
-- Next Milestone: 85% by May 2025
+### ✅ Exception Handler Testing Status
+- ModelNotFoundException: 100% coverage  
+- QueryException: 100% coverage  
+- ValidationException: 100% coverage  
+- AuthenticationException: 100% coverage  
+- UnauthorizedException: 100% coverage  
 
+### 🔜 Coverage Improvement Progress
+- Current Target: 95%+ line coverage by Q3 2025  
+- Next Milestone: 90% by May 2025  
+- New Testing Directories: Unit/Models, Unit/Policies  
 ## 🧪 Testing with `curl`
 
 ### Register
@@ -105,16 +117,26 @@ curl -X POST http://localhost:8000/api/projects/1/tasks \
 🔧 Configuration
 	•	Sanctum installed and configured
 	•	CORS enabled
-	•	Laravel API-only stack (no web routes)
+	•	Laravel API-only stack (with Nova routes)
 	•	Intelephense and VS Code configured for PHP 8.2+
+	•	Octane (Swoole) installed and configured
+	•	Horizon queue management configured
+	•	Laravel 12 structure (no config/app.php service providers)
+	•	Xdebug 3.4.2 for coverage reporting (port 9003)
+	•	MySQL test database (Forge provisioned)
+	•	Database transactions for test isolation
+⸻
+⚙️ GitHub Actions & Workflows
+
+This repo includes advanced CI/CD via GitHub Actions with:
+- Main test workflow (tests.yml)  
+- Production deployment workflow (production.yml)  
+- Staging environment workflow (staging.yml)  
+- Automated tests on every push/PR  
+- Code coverage with Coveralls (Xdebug)  
+- Database testing with in-memory SQLite  
 
 ⸻
-
-⚙️ GitHub Actions
-
-This repo includes CI testing via GitHub Actions.
-Every push and PR to main runs automated tests and (optionally) code coverage with Coveralls.
-
 ⸻
 
 📄 Additional Documentation

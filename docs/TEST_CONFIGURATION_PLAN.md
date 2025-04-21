@@ -5,12 +5,15 @@
 Current test configuration for Laravel API Boilerplate including:  
 - Test types and structure  
 - Coverage configuration  
-- Database setup  
-- CI/CD integration  
-
-*See also: [Coverage Improvement Plan](./COVERAGE_IMPROVEMENT_PLAN.md)*
-
-## Steps
+### 🛠 Testing Environment
+- PHPUnit 10.4 with coverage
+- Xdebug 3.4.2 (port 9003)
+- MySQL test database (Laravel Forge provisioned)
+- GitHub Actions CI/CD:
+  - Automated test suite
+  - Production deployment via Forge
+  - Staging environment workflow
+- Coveralls.io integration
 
 1. Backup existing configuration
    - Copy `phpunit.xml` to `phpunit.xml.bak`

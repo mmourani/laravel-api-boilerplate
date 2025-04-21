@@ -19,13 +19,25 @@ This plan outlines the step-by-step implementation process for updating test con
 
 4. PHPUnit Configuration
    - Edit `phpunit.xml`:
-     - Set `<env name="DB_CONNECTION" value="sqlite"/>`
-     - Configure `<logging>` for coverage HTML, XML, and text
-     - Define `<filter>` to include `src/` and `tests/`, and exclude `vendor/`
+## 🚀 Deployment & CI/CD
 
-5. In‑Memory SQLite Setup
-   - Update the test bootstrap (e.g., `tests/Bootstrap.php`) to create an in‑memory SQLite database
-   - Ensure migrations run against `:memory:` or a temp file before each test suite
+### Production Environment
+- Laravel Forge managed servers
+- Automated Git deployments
+- MySQL 8.0 databases
+- Queue workers via Horizon
+
+### CI/CD Workflows
+1. tests.yml:
+   - PHP 8.2 test matrix
+   - Xdebug coverage
+   - MySQL test database
+2. production.yml:
+   - Forge-triggered deployments
+   - Automated migrations
+3. staging.yml:
+   - Preview environments
+   - Test data seeding
 
 6. Test Isolation Improvements
    - Modify `TestCase.php` to wrap each test in a transaction or refresh the in‑memory database

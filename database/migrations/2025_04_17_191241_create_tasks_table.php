@@ -14,9 +14,12 @@ return new class () extends Migration {
             $table->id();
             $table->foreignId('project_id')->constrained()->onDelete('cascade');
             $table->string('title');
-            $table->boolean('done')->default(false);
-            $table->enum('priority', ['low', 'medium', 'high'])->nullable();
+            $table->text('description')->nullable();
+            $table->enum('status', ['pending', 'in_progress', 'completed'])->default('pending');
+            $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
             $table->date('due_date')->nullable();
+            $table->dateTime('deadline')->nullable(); // ✅ Add this
+            $table->boolean('is_done')->default(false); // ✅ Add this
             $table->timestamps();
         });
     }

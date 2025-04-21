@@ -1,0 +1,138 @@
+name: Laravel API Staging CI/CD
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+
+jobs:
+  staging-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testing
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - name: ✨ Checkout code
+        uses: actions/checkout@v3
+
+      - name: ⌘ Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          extensions: mbstring, bcmath, pdo, pdo_mysql, xdebug
+          coverage: xdebug
+
+      - name: 📁 Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: 🔁 Copy staging env
+        run: cp .env.staging .env
+
+      - name: 🏗️ Inject build + commit metadata
+        run: |
+          echo "APP_BUILD=$(date +%Y-%m-%d-%H%M)" >> .env
+          echo "APP_COMMIT=$(git rev-parse --short HEAD)" >> .env
+
+      - name: 🧾 Output build metadata
+        id: build
+        run: echo "commit=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: ⛏ Generate Laravel app key
+        run: php artisan key:generate
+
+      - name: 🏛️ Run migrations
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        run: php artisan migrate --force
+
+      - name: 🔢 Run PHPUnit tests with coverage
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        run: |
+          mkdir -p build/logs
+          ./vendor/bin/phpunit --coverage-clover build/logs/clover.xml --coverage-text
+
+      - name: ✅ Enforce coverage threshold
+        run: |
+          TOTAL=$(grep -Po 'Lines:\s*\K[0-9]+(?=%)' build/logs/clover.xml | head -n 1)
+          echo "Detected coverage: $TOTAL%"
+          if [ "$TOTAL" -lt 95 ]; then
+            echo "❌ Coverage ($TOTAL%) is below 95%" && exit 1
+          else
+            echo "✅ Coverage is $TOTAL% — good to go!"
+          fi
+
+      - name: 📦 Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: phpunit-staging-coverage
+          path: build/logs/clover.xml
+
+  deploy-staging:
+    needs: staging-tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚀 Deploy to Laravel Forge (Staging)
+        run: |
+          curl -X POST "https://forge.laravel.com/api/v1/servers/${{ secrets.FORGE_STAGING_SERVER_ID }}/sites/${{ secrets.FORGE_STAGING_SITE_ID }}/deploy" \
+            -H "Authorization: Bearer ${{ secrets.FORGE_API_TOKEN }}" \
+            -H "Accept: application/json"
+
+      - name: ⏱️ Wait for deployment to finish
+        run: sleep 30
+
+      - name: 🔍 Verify deployed commit
+        run: |
+          DEPLOYED_COMMIT=$(curl -s https://staging.hubtrade.io/version | jq -r .commit)
+          echo "Deployed commit: $DEPLOYED_COMMIT"
+          if [ "$DEPLOYED_COMMIT" != "${{ needs.staging-tests.outputs.commit }}" ]; then
+            echo "❌ Commit mismatch!" && exit 1
+          fi
+
+      - name: 📣 Slack Success Notification
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: repo,message,commit,author,job,ref
+          custom_payload: |
+            {
+              "text": ":rocket: *Staging Deploy Successful* on *staging.hubtrade.io* (`${{ github.ref_name }}`)\nCommit `${{ needs.staging-tests.outputs.commit }}` deployed by `${{ github.actor }}`"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: ❌ Slack Failure Notification
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": ":fire: *Staging Deploy Failed* on *staging.hubtrade.io* (`${{ github.ref_name }}`)\nTriggered by `${{ github.actor }}`"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

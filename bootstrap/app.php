@@ -22,6 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\ThrottleRequests::class,
         ]);
     })
+    ->withProviders([
+        App\Providers\FortifyServiceProvider::class, // 👈 Add this line
+    ])
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })

@@ -1,12 +1,10 @@
-name: Laravel API CI with Coverage
+name: Laravel API CI + Deploy
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-  schedule:
-    - cron: '0 3 * * 1' # Every Monday at 03:00 UTC
 
 jobs:
   laravel-tests:
@@ -41,6 +39,15 @@ jobs:
 
       - name: 🔁 Set up Laravel environment
         run: cp .env.example .env
+
+      - name: 🏗️ Inject build + commit metadata
+        run: |
+          echo "APP_BUILD=$(date +%Y-%m-%d-%H%M)" >> .env
+          echo "APP_COMMIT=$(git rev-parse --short HEAD)" >> .env
+
+      - name: 🧾 Output build metadata
+        id: build
+        run: echo "commit=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: ⛏ Generate Laravel app key
         run: php artisan key:generate
@@ -77,48 +84,33 @@ jobs:
             echo "✅ Coverage is $TOTAL% — good to go!"
           fi
 
-      - name: ⭐ Upload coverage to Coveralls
+      - name: 📦 Upload coverage report to GitHub
+        uses: actions/upload-artifact@v3
+        with:
+          name: phpunit-coverage
+          path: build/logs/clover.xml
+
+      - name: ⭐ Upload to Coveralls
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: build/logs/clover.xml
 
-      - name: 📣 Notify Slack on Success
-        if: success()
-        uses: 8398a7/action-slack@v3
-        with:
-          status: custom
-          fields: repo,message,commit,author,job,ref,workflow
-          custom_payload: |
-            {
-              "text": ":white_check_mark: Laravel CI passed on *${{ github.repository }}* (`${{ github.ref_name }}`) by `${{ github.actor }}`",
-              "attachments": [{
-                "color": "good",
-                "fields": [
-                  { "title": "Workflow", "value": "${{ github.workflow }}", "short": true },
-                  { "title": "Branch", "value": "${{ github.ref_name }}", "short": true }
-                ]
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  deploy:
+    needs: laravel-tests
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
 
-      - name: ❌ Notify Slack on Failure
-        if: failure()
-        uses: 8398a7/action-slack@v3
-        with:
-          status: custom
-          fields: repo,message,commit,author,job,ref,workflow
-          custom_payload: |
-            {
-              "text": ":x: Laravel CI *failed* on *${{ github.repository }}* (`${{ github.ref_name }}`) by `${{ github.actor }}`",
-              "attachments": [{
-                "color": "danger",
-                "fields": [
-                  { "title": "Workflow", "value": "${{ github.workflow }}", "short": true },
-                  { "title": "Branch", "value": "${{ github.ref_name }}", "short": true }
-                ]
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    steps:
+      - name: 🚀 Trigger Laravel Forge deployment
+        run: curl -X POST "${{ secrets.FORGE_DEPLOY_HOOK_URL }}"
+
+      - name: 🔍 Verify deployed commit matches
+        run: |
+          sleep 20 # wait for deployment to complete
+          DEPLOYED_COMMIT=$(curl -s https://your-app.com/version | jq -r .commit)
+          echo "Deployed commit: $DEPLOYED_COMMIT"
+          if [ "$DEPLOYED_COMMIT" != "${{ needs.laravel-tests.outputs.commit }}" ]; then
+            echo "❌ Commit mismatch! Expected ${{ needs.laravel-tests.outputs.commit }} but got $DEPLOYED_COMMIT"
+            exit 1
+          fi

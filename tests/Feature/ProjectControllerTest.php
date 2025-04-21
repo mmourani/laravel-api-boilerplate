@@ -11,79 +11,88 @@ class ProjectControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected string $prefix = '/api/v1';
+
     public function test_restore_successfully(): void
     {
-        $user    = User::factory()->create();
+        /** @var User $user */
+        $user = User::factory()->create();
+
+        /** @var Project $project */
         $project = Project::factory()->create(['user_id' => $user->id]);
-
-        // Soft delete
         $project->delete();
-
-        // Ensure project is actually soft-deleted
-        $this->assertTrue($project->fresh()->trashed(), 'The project is not soft-deleted before restore.');
 
         $this->actingAs($user);
 
-        $response = $this->patchJson("/api/projects/{$project->id}/restore");
+        $response = $this->patchJson("{$this->prefix}/projects/{$project->id}/restore");
 
         $response->assertOk()
-            ->assertJson([
-                'message' => 'Project restored successfully',
-            ]);
+            ->assertJson(['message' => 'Project restored successfully']);
 
         $this->assertFalse($project->fresh()->trashed());
     }
 
-    public function test_restore_unauthorized_user()
+    public function test_restore_unauthorized_user(): void
     {
-        $owner     = User::factory()->create();
-        $otherUser = User::factory()->create();
-        $project   = Project::factory()->for($owner)->create();
+        /** @var User $owner */
+        $owner = User::factory()->create();
+
+        /** @var User $intruder */
+        $intruder = User::factory()->create();
+
+        /** @var Project $project */
+        $project = Project::factory()->create(['user_id' => $owner->id]);
         $project->delete();
 
-        $this->actingAs($otherUser);
+        $this->actingAs($intruder);
 
-        $response = $this->patchJson("/api/projects/{$project->id}/restore");
+        $response = $this->patchJson("{$this->prefix}/projects/{$project->id}/restore");
 
         $response->assertStatus(403);
     }
 
-    public function test_restore_already_active_project()
+    public function test_restore_already_active_project(): void
     {
-        $user    = User::factory()->create();
-        $project = Project::factory()->for($user)->create();
+        /** @var User $user */
+        $user = User::factory()->create();
+
+        /** @var Project $project */
+        $project = Project::factory()->create(['user_id' => $user->id]); // Not deleted
 
         $this->actingAs($user);
 
-        $response = $this->patchJson("/api/projects/{$project->id}/restore");
+        $response = $this->patchJson("{$this->prefix}/projects/{$project->id}/restore");
 
         $response->assertStatus(400)
-            ->assertJson([
-                'message' => 'Project is not deleted',
-            ]);
+            ->assertJson(['message' => 'Project is not deleted']);
     }
 
-    public function test_restore_nonexistent_project()
+    public function test_restore_nonexistent_project(): void
     {
+        /** @var User $user */
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $response = $this->patchJson('/api/projects/99999/restore');
+        $response = $this->patchJson("{$this->prefix}/projects/999999/restore");
 
         $response->assertStatus(404)
-            ->assertJsonFragment([
-                'message' => 'Project not found',
-            ]);
+            ->assertJsonFragment(['message' => 'Project not found']);
     }
 
-    public function test_update_with_partial_data()
+    public function test_update_with_partial_data(): void
     {
-        $user    = User::factory()->create();
-        $project = Project::factory()->for($user)->create();
+        /** @var User $user */
+        $user = User::factory()->create();
+
+        /** @var Project $project */
+        $project = Project::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'Initial Title',
+        ]);
 
         $this->actingAs($user);
 
-        $response = $this->patchJson("/api/projects/{$project->id}", [
+        $response = $this->patchJson("{$this->prefix}/projects/{$project->id}", [
             'title' => 'Updated Title',
         ]);
 
@@ -91,14 +100,19 @@ class ProjectControllerTest extends TestCase
         $this->assertEquals('Updated Title', $project->fresh()->title);
     }
 
-    public function test_index_with_empty_search_results()
+    public function test_index_with_empty_search_results(): void
     {
+        /** @var User $user */
         $user = User::factory()->create();
-        Project::factory()->for($user)->create(['title' => 'Alpha']);
+
+        Project::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'Alpha',
+        ]);
 
         $this->actingAs($user);
 
-        $response = $this->getJson('/api/projects?search=Beta');
+        $response = $this->getJson("{$this->prefix}/projects?search=Beta");
 
         $response->assertOk();
         $this->assertCount(0, $response->json('data'));

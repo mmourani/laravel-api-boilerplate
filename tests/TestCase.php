@@ -2,10 +2,10 @@
 
 namespace Tests;
 
-use Throwable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 use Mockery;
+use Throwable;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -15,11 +15,8 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        if (config('database.default') === 'sqlite' && config('database.connections.sqlite.database') === ':memory:') {
-            // Run fresh migrations manually
-            $this->artisan('migrate:fresh', ['--seed' => true])->run();
-            DB::statement('PRAGMA foreign_keys=ON;');
-        }
+        // Optional: Ensure database is clean before each test
+        $this->artisan('migrate:fresh', ['--seed' => true])->run();
     }
 
     protected function tearDown(): void
@@ -27,20 +24,13 @@ abstract class TestCase extends BaseTestCase
         Mockery::close();
 
         try {
-            DB::rollBack(); // In case a transaction was started
+            DB::rollBack();
         } catch (Throwable $e) {
-            // Prevent errors if no active transaction
+            // Silent fail if no transaction was started
         }
 
         DB::disconnect();
 
         parent::tearDown();
-    }
-
-
-    // Prevent Laravel from wrapping tests in transactions
-    protected function beginDatabaseTransaction()
-    {
-        // Override to skip automatic transaction
     }
 }
