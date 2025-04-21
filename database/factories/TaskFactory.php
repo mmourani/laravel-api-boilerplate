@@ -15,12 +15,12 @@ class TaskFactory extends Factory
     public function definition(): array
     {
         return [
-            'project_id' => Project::factory(),
-            'title' => $this->faker->sentence,
+            'project_id'  => Project::factory(),
+            'title'       => $this->faker->sentence,
             'description' => $this->faker->paragraph,
-            'status' => 'pending',
-            'priority' => 'medium',
-            'due_date' => $this->faker->date(),
+            'status'      => 'pending',
+            'priority'    => 'medium',
+            'due_date'    => $this->faker->date(),
         ];
     }
 }

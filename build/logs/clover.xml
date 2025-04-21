@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1745231858">
-  <project timestamp="1745231858">
+<coverage generated="1745231907">
+  <project timestamp="1745231907">
     <file name="/Users/user/Sites/saas-boilerplate/backend/app/Contracts/TaskRepositoryInterface.php">
       <metrics loc="43" ncloc="19" classes="0" methods="0" coveredmethods="0" conditionals="0" coveredconditionals="0" statements="0" coveredstatements="0" elements="0" coveredelements="0"/>
     </file>
@@ -201,11 +201,11 @@
         <class name="App\Models\User" namespace="App\Models">
           <metrics complexity="2" methods="2" coveredmethods="1" conditionals="0" coveredconditionals="0" statements="5" coveredstatements="4" elements="7" coveredelements="5"/>
         </class>
-        <line num="27" type="method" name="casts" visibility="protected" complexity="1" crap="1" count="24"/>
-        <line num="29" type="stmt" count="24"/>
-        <line num="30" type="stmt" count="24"/>
-        <line num="31" type="stmt" count="24"/>
-        <line num="32" type="stmt" count="24"/>
+        <line num="27" type="method" name="casts" visibility="protected" complexity="1" crap="1" count="33"/>
+        <line num="29" type="stmt" count="33"/>
+        <line num="30" type="stmt" count="33"/>
+        <line num="31" type="stmt" count="33"/>
+        <line num="32" type="stmt" count="33"/>
         <line num="35" type="method" name="projects" visibility="public" complexity="1" crap="2" count="0"/>
         <line num="37" type="stmt" count="0"/>
         <metrics loc="40" ncloc="40" classes="1" methods="2" coveredmethods="1" conditionals="0" coveredconditionals="0" statements="5" coveredstatements="4" elements="7" coveredelements="5"/>
@@ -289,22 +289,22 @@
     <package name="App\Providers">
       <file name="/Users/user/Sites/saas-boilerplate/backend/app/Providers/AppServiceProvider.php">
         <class name="App\Providers\AppServiceProvider" namespace="App\Providers">
-          <metrics complexity="4" methods="2" coveredmethods="1" conditionals="0" coveredconditionals="0" statements="11" coveredstatements="10" elements="13" coveredelements="11"/>
+          <metrics complexity="4" methods="2" coveredmethods="2" conditionals="0" coveredconditionals="0" statements="11" coveredstatements="11" elements="13" coveredelements="13"/>
         </class>
         <line num="16" type="method" name="register" visibility="public" complexity="1" crap="1" count="33"/>
         <line num="18" type="stmt" count="33"/>
         <line num="19" type="stmt" count="33"/>
         <line num="20" type="stmt" count="33"/>
         <line num="21" type="stmt" count="33"/>
-        <line num="27" type="method" name="boot" visibility="public" complexity="3" crap="3.03" count="33"/>
+        <line num="27" type="method" name="boot" visibility="public" complexity="3" crap="3" count="33"/>
         <line num="29" type="stmt" count="33"/>
         <line num="30" type="stmt" count="33"/>
         <line num="31" type="stmt" count="33"/>
         <line num="33" type="stmt" count="33"/>
         <line num="34" type="stmt" count="33"/>
         <line num="37" type="stmt" count="33"/>
-        <line num="38" type="stmt" count="0"/>
-        <metrics loc="42" ncloc="34" classes="1" methods="2" coveredmethods="1" conditionals="0" coveredconditionals="0" statements="11" coveredstatements="10" elements="13" coveredelements="11"/>
+        <line num="38" type="stmt" count="33"/>
+        <metrics loc="42" ncloc="34" classes="1" methods="2" coveredmethods="2" conditionals="0" coveredconditionals="0" statements="11" coveredstatements="11" elements="13" coveredelements="13"/>
       </file>
       <file name="/Users/user/Sites/saas-boilerplate/backend/app/Providers/NovaServiceProvider.php">
         <class name="App\Providers\NovaServiceProvider" namespace="App\Providers">
@@ -413,6 +413,6 @@
         <metrics loc="18" ncloc="18" classes="1" methods="1" coveredmethods="0" conditionals="0" coveredconditionals="0" statements="1" coveredstatements="0" elements="2" coveredelements="0"/>
       </file>
     </package>
-    <metrics files="20" loc="986" ncloc="836" classes="17" methods="54" coveredmethods="19" conditionals="0" coveredconditionals="0" statements="221" coveredstatements="129" elements="275" coveredelements="148"/>
+    <metrics files="20" loc="986" ncloc="836" classes="17" methods="54" coveredmethods="20" conditionals="0" coveredconditionals="0" statements="221" coveredstatements="130" elements="275" coveredelements="150"/>
   </project>
 </coverage>
