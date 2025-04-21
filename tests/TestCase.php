@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use Throwable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 use Mockery;
@@ -19,8 +20,6 @@ abstract class TestCase extends BaseTestCase
             $this->artisan('migrate:fresh', ['--seed' => true])->run();
             DB::statement('PRAGMA foreign_keys=ON;');
         }
-
-        $this->disableTelescope();
     }
 
     protected function tearDown(): void
@@ -29,7 +28,7 @@ abstract class TestCase extends BaseTestCase
 
         try {
             DB::rollBack(); // In case a transaction was started
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Prevent errors if no active transaction
         }
 
@@ -38,30 +37,6 @@ abstract class TestCase extends BaseTestCase
         parent::tearDown();
     }
 
-    protected function disableTelescope(): void
-    {
-        config(['telescope.enabled' => false]);
-        putenv('TELESCOPE_ENABLED=false');
-
-        if ($this->app->bound('Laravel\Telescope\Telescope')) {
-            $this->app->offsetUnset('Laravel\Telescope\Telescope');
-        }
-
-        if (class_exists('Laravel\Telescope\Telescope')) {
-            \Laravel\Telescope\Telescope::stopRecording();
-        }
-
-        $this->beforeApplicationDestroyed(function () {
-            if (class_exists('Laravel\Telescope\Telescope')) {
-                $reflection = new \ReflectionClass($this->app);
-                if ($reflection->hasProperty('terminatingCallbacks')) {
-                    $property = $reflection->getProperty('terminatingCallbacks');
-                    $property->setAccessible(true);
-                    $property->setValue($this->app, []);
-                }
-            }
-        });
-    }
 
     // Prevent Laravel from wrapping tests in transactions
     protected function beginDatabaseTransaction()

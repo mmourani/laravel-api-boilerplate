@@ -22,9 +22,9 @@ class AuthControllerTest extends TestCase
     public function test_register_validates_email_format()
     {
         $response = $this->postJson('/api/register', [
-            'name' => 'Test User',
-            'email' => 'invalid-email',
-            'password' => 'password',
+            'name'                  => 'Test User',
+            'email'                 => 'invalid-email',
+            'password'              => 'password',
             'password_confirmation' => 'password',
         ]);
 
@@ -35,9 +35,9 @@ class AuthControllerTest extends TestCase
     public function test_register_validates_password_confirmation()
     {
         $response = $this->postJson('/api/register', [
-            'name' => 'Test User',
-            'email' => fake()->unique()->safeEmail(),
-            'password' => 'password',
+            'name'                  => 'Test User',
+            'email'                 => fake()->unique()->safeEmail(),
+            'password'              => 'password',
             'password_confirmation' => 'different-password',
         ]);
 
@@ -51,9 +51,9 @@ class AuthControllerTest extends TestCase
         User::factory()->create(['email' => $email]);
 
         $response = $this->postJson('/api/register', [
-            'name' => 'Test User',
-            'email' => $email,
-            'password' => 'password',
+            'name'                  => 'Test User',
+            'email'                 => $email,
+            'password'              => 'password',
             'password_confirmation' => 'password',
         ]);
 
@@ -72,7 +72,7 @@ class AuthControllerTest extends TestCase
     public function test_login_validates_email_format()
     {
         $response = $this->postJson('/api/login', [
-            'email' => 'invalid-email',
+            'email'    => 'invalid-email',
             'password' => 'password',
         ]);
 
@@ -83,7 +83,7 @@ class AuthControllerTest extends TestCase
     public function test_login_with_non_existent_user()
     {
         $response = $this->postJson('/api/login', [
-            'email' => fake()->unique()->safeEmail(),
+            'email'    => fake()->unique()->safeEmail(),
             'password' => 'password',
         ]);
 
@@ -95,12 +95,12 @@ class AuthControllerTest extends TestCase
     {
         $email = fake()->unique()->safeEmail();
         User::factory()->create([
-            'email' => $email,
+            'email'    => $email,
             'password' => bcrypt('correct-password'),
         ]);
 
         $response = $this->postJson('/api/login', [
-            'email' => $email,
+            'email'    => $email,
             'password' => 'wrong-password',
         ]);
 
@@ -123,8 +123,8 @@ class AuthControllerTest extends TestCase
 
         $response->assertOk()
             ->assertJson([
-                'id' => $user->id,
-                'name' => $user->name,
+                'id'    => $user->id,
+                'name'  => $user->name,
                 'email' => $user->email,
             ]);
     }
@@ -137,7 +137,7 @@ class AuthControllerTest extends TestCase
 
     public function test_successful_logout_deletes_current_token()
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
 
         $token = $user->createToken('TestToken')->plainTextToken;
 
@@ -155,9 +155,9 @@ class AuthControllerTest extends TestCase
     public function test_successful_registration_returns_correct_structure()
     {
         $response = $this->postJson('/api/register', [
-            'name' => 'Test User',
-            'email' => fake()->unique()->safeEmail(),
-            'password' => 'password',
+            'name'                  => 'Test User',
+            'email'                 => fake()->unique()->safeEmail(),
+            'password'              => 'password',
             'password_confirmation' => 'password',
         ]);
 
@@ -173,12 +173,12 @@ class AuthControllerTest extends TestCase
         $email = fake()->unique()->safeEmail();
 
         $user = User::factory()->create([
-            'email' => $email,
+            'email'    => $email,
             'password' => bcrypt('password'),
         ]);
 
         $response = $this->postJson('/api/login', [
-            'email' => $email,
+            'email'    => $email,
             'password' => 'password',
         ]);
 

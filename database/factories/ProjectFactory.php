@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Carbon;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Project>
+ * @extends Factory<Project>
  */
 class ProjectFactory extends Factory
 {
@@ -20,12 +20,12 @@ class ProjectFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
-            'title' => fake()->sentence(4),
+            'user_id'     => User::factory(),
+            'title'       => fake()->sentence(4),
             'description' => fake()->paragraph(),
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-            'deleted_at' => null,
+            'created_at'  => Carbon::now(),
+            'updated_at'  => Carbon::now(),
+            'deleted_at'  => null,
         ];
     }
 

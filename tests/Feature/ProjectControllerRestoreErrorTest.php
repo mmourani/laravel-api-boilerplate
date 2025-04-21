@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use Mockery;
+use Exception;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\ProjectService;
@@ -14,7 +16,9 @@ class ProjectControllerRestoreErrorTest extends TestCase
 
     public function test_restore_handles_database_error(): void
     {
+        /** @var User $user */
         $user = User::factory()->create();
+
         $project = Project::factory()->create(['user_id' => $user->id]);
         $project->delete();
 
@@ -22,17 +26,17 @@ class ProjectControllerRestoreErrorTest extends TestCase
 
         // Create a project model to return (same user)
         $fakedProject = new Project([
-            'id' => $project->id,
-            'user_id' => $user->id,
+            'id'         => $project->id,
+            'user_id'    => $user->id,
             'deleted_at' => now(), // mimic soft-deleted
         ]);
 
         // Simulate service throwing a DB error
-        $mockService = \Mockery::mock(ProjectService::class);
+        $mockService = Mockery::mock(ProjectService::class);
         $mockService->shouldReceive('restore')
             ->with($project->id)
             ->once()
-            ->andThrow(new \Exception('Simulated DB error'));
+            ->andThrow(new Exception('Simulated DB error'));
 
         $this->app->instance(ProjectService::class, $mockService);
 

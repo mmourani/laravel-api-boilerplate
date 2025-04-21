@@ -1,0 +1,26 @@
+parameters:
+    level: max
+
+    paths:
+        - app
+        - routes
+        - tests
+
+    excludePaths:
+        - vendor
+        - storage
+        - bootstrap/cache
+
+    inferPrivatePropertyTypeFromConstructor: true
+    checkExplicitMixed: true
+    checkMissingCallableSignature: true
+    reportUnmatchedIgnoredErrors: false
+
+    scanFiles:
+        - bootstrap/app.php
+        - routes/api.php
+        - routes/web.php
+
+    bootstrapFiles:
+        - vendor/autoload.php
+        - bootstrap/app.php

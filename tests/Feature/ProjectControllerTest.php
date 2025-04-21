@@ -13,7 +13,7 @@ class ProjectControllerTest extends TestCase
 
     public function test_restore_successfully(): void
     {
-        $user = User::factory()->create();
+        $user    = User::factory()->create();
         $project = Project::factory()->create(['user_id' => $user->id]);
 
         // Soft delete
@@ -36,9 +36,9 @@ class ProjectControllerTest extends TestCase
 
     public function test_restore_unauthorized_user()
     {
-        $owner = User::factory()->create();
+        $owner     = User::factory()->create();
         $otherUser = User::factory()->create();
-        $project = Project::factory()->for($owner)->create();
+        $project   = Project::factory()->for($owner)->create();
         $project->delete();
 
         $this->actingAs($otherUser);
@@ -50,7 +50,7 @@ class ProjectControllerTest extends TestCase
 
     public function test_restore_already_active_project()
     {
-        $user = User::factory()->create();
+        $user    = User::factory()->create();
         $project = Project::factory()->for($user)->create();
 
         $this->actingAs($user);
@@ -78,7 +78,7 @@ class ProjectControllerTest extends TestCase
 
     public function test_update_with_partial_data()
     {
-        $user = User::factory()->create();
+        $user    = User::factory()->create();
         $project = Project::factory()->for($user)->create();
 
         $this->actingAs($user);

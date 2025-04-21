@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Throwable;
 use App\Models\Project;
 use App\Services\ProjectService;
 use Illuminate\Http\JsonResponse;
@@ -28,7 +29,7 @@ class ProjectController extends Controller
                 ->get();
 
             return response()->json(['data' => $projects]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Failed to fetch projects', ['error' => $e->getMessage()]);
 
             return response()->json(['message' => 'Server error'], 500);
@@ -47,7 +48,7 @@ class ProjectController extends Controller
             $project->update($data);
 
             return response()->json($project);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Failed to update project', ['error' => $e->getMessage()]);
 
             return response()->json(['message' => 'Failed to update project'], 500);
@@ -74,7 +75,7 @@ class ProjectController extends Controller
             $restored = $this->projectService->restore($id);
 
             return response()->json(['message' => 'Project restored successfully']);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Restore failed', ['error' => $e->getMessage()]);
 
             return response()->json(['message' => 'Failed to restore project'], 500);

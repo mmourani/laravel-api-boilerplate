@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use Exception;
 use App\Models\Project;
 use App\Services\ProjectService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,7 +19,7 @@ class ProjectServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new ProjectService;
+        $this->service = new ProjectService();
     }
 
     public function test_restore_project_successfully(): void
@@ -44,7 +45,7 @@ class ProjectServiceTest extends TestCase
         $mockProject->shouldReceive('findOrFail')
             ->with(999)
             ->once()
-            ->andThrow(new \Exception('DB error'));
+            ->andThrow(new Exception('DB error'));
 
         Log::shouldReceive('error')
             ->once()

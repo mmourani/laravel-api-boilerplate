@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Throwable;
 use App\Models\Project;
 use Illuminate\Support\Facades\Log;
 
@@ -11,7 +12,7 @@ class ProjectService
 
     public function __construct(?Project $project = null)
     {
-        $this->project = $project ?? new Project;
+        $this->project = $project ?? new Project();
     }
 
     public function restore(int $id): ?Project
@@ -21,7 +22,7 @@ class ProjectService
             $project->restore();
 
             return $project;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Failed to restore project', ['error' => $e->getMessage()]);
 
             return null;

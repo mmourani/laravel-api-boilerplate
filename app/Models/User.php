@@ -28,12 +28,12 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
 
     public function projects()
     {
-        return $this->hasMany(\App\Models\Project::class);
+        return $this->hasMany(Project::class);
     }
 }
